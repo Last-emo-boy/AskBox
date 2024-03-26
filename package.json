@@ -1,0 +1,11 @@
+{
+  "name": "askbox",
+  "version": "1.0.0",
+  "description": "An open-sourced version askbox",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "last-emo-boy",
+  "license": "AGPL-3.0-or-later"
+}
