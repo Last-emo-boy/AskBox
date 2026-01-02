@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { getStoredAccount } from '@/lib/storage';
 
-
 import type { StoredAccount } from '@askbox/shared-types';
 
 interface Box {
@@ -51,7 +50,9 @@ export default function BoxesPage() {
   }, [router]);
 
   const login = async (): Promise<boolean> => {
-    if (!account) {return false;}
+    if (!account) {
+      return false;
+    }
 
     try {
       await initCrypto();
@@ -76,10 +77,7 @@ export default function BoxesPage() {
       const challenge = await api.requestChallenge(toBase64Url(keys.signKeyPair.publicKey));
 
       // Sign challenge
-      const signature = signChallenge(
-        fromBase64Url(challenge.nonce),
-        keys.signKeyPair.privateKey
-      );
+      const signature = signChallenge(fromBase64Url(challenge.nonce), keys.signKeyPair.privateKey);
 
       // Verify
       const auth = await api.verifyChallenge(challenge.challenge_id, toBase64Url(signature));
@@ -95,14 +93,14 @@ export default function BoxesPage() {
   const loadBoxes = async () => {
     try {
       const result = await api.getMyBoxes();
-      setBoxes(result.boxes);
+      setBoxes(result.boxes as Box[]);
     } catch (err) {
       // If unauthorized, need to login
       if (err instanceof Error && err.message.includes('Unauthorized')) {
         const success = await login();
         if (success) {
           const result = await api.getMyBoxes();
-          setBoxes(result.boxes);
+          setBoxes(result.boxes as Box[]);
         }
       } else {
         setError(err instanceof Error ? err.message : '加载失败');
@@ -131,12 +129,15 @@ export default function BoxesPage() {
       }
 
       const result = await api.createBox(newSlug || undefined, { allow_anonymous: true });
-      setBoxes([...boxes, {
-        box_id: result.box_id,
-        slug: result.slug,
-        settings: { allow_anonymous: true },
-        created_at: result.created_at,
-      }]);
+      setBoxes([
+        ...boxes,
+        {
+          box_id: result.box_id,
+          slug: result.slug,
+          settings: { allow_anonymous: true },
+          created_at: result.created_at,
+        },
+      ]);
       setNewSlug('');
     } catch (err) {
       setError(err instanceof Error ? err.message : '创建失败');
@@ -147,16 +148,16 @@ export default function BoxesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="border-primary-600 h-12 w-12 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
 
   return (
     <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+      <div className="mx-auto max-w-4xl">
+        <header className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">我的提问箱</h1>
           <Link href="/dashboard" className="btn-secondary">
             返回控制台
@@ -165,7 +166,7 @@ export default function BoxesPage() {
 
         {needPassword && account?.encrypted_seed && (
           <div className="card mb-6">
-            <h2 className="text-lg font-semibold mb-4">请输入密码以继续</h2>
+            <h2 className="mb-4 text-lg font-semibold">请输入密码以继续</h2>
             <div className="flex gap-3">
               <input
                 type="password"
@@ -178,9 +179,7 @@ export default function BoxesPage() {
                 登录
               </button>
             </div>
-            {error && (
-              <p className="text-red-600 text-sm mt-2">{error}</p>
-            )}
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
         )}
 
@@ -188,52 +187,45 @@ export default function BoxesPage() {
           <>
             {/* 创建新提问箱 */}
             <div className="card mb-6">
-              <h2 className="text-lg font-semibold mb-4">创建新提问箱</h2>
+              <h2 className="mb-4 text-lg font-semibold">创建新提问箱</h2>
               <div className="flex gap-3">
                 <input
                   type="text"
                   className="input flex-1"
                   value={newSlug}
-                  onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  onChange={(e) =>
+                    setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                  }
                   placeholder="自定义链接（可选，如 my-box）"
                 />
-                <button
-                  onClick={handleCreateBox}
-                  disabled={isCreating}
-                  className="btn-primary"
-                >
+                <button onClick={handleCreateBox} disabled={isCreating} className="btn-primary">
                   {isCreating ? '创建中...' : '创建'}
                 </button>
               </div>
-              {error && (
-                <p className="text-red-600 text-sm mt-2">{error}</p>
-              )}
+              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             </div>
 
             {/* 提问箱列表 */}
             <div className="space-y-4">
               {boxes.length === 0 ? (
-                <div className="card text-center text-gray-500 py-12">
+                <div className="card py-12 text-center text-gray-500">
                   <p>还没有提问箱，创建一个吧！</p>
                 </div>
               ) : (
                 boxes.map((box) => (
                   <div key={box.box_id} className="card">
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div>
                         <h3 className="text-lg font-semibold">{box.slug}</h3>
                         <p className="text-sm text-gray-500">
                           创建于 {new Date(box.created_at).toLocaleDateString()}
                         </p>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 text-sm text-gray-500">
                           分享链接: {window.location.origin}/box/{box.slug}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Link
-                          href={`/box/${box.slug}`}
-                          className="btn-secondary text-sm"
-                        >
+                        <Link href={`/box/${box.slug}`} className="btn-secondary text-sm">
                           预览
                         </Link>
                         <Link

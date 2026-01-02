@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 
-import { saveReceipt, getReceipts } from '@/lib/storage';
+import { saveReceipt, getAllReceipts } from '@/lib/storage';
+
+import type { StoredReceipt } from '@askbox/shared-types';
 
 function ImportContent() {
   const searchParams = useSearchParams();
@@ -14,7 +16,7 @@ function ImportContent() {
   useEffect(() => {
     async function importReceipt() {
       const data = searchParams.get('data');
-      
+
       if (!data) {
         setStatus('error');
         setMessage('缺少回执数据');
@@ -34,9 +36,9 @@ function ImportContent() {
         }
 
         // Check for duplicates
-        const existing = await getReceipts();
-        const duplicate = existing.find(r => r.question_id === receipt.q);
-        
+        const existing = await getAllReceipts();
+        const duplicate = existing.find((r: StoredReceipt) => r.question_id === receipt.q);
+
         if (duplicate) {
           setStatus('duplicate');
           setMessage('此回执已存在');
@@ -64,24 +66,22 @@ function ImportContent() {
   }, [searchParams]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-md w-full">
+    <main className="flex min-h-screen items-center justify-center p-8">
+      <div className="w-full max-w-md">
         <div className="card text-center">
           {status === 'loading' && (
             <div className="space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+              <div className="border-primary-600 mx-auto h-12 w-12 animate-spin rounded-full border-b-2"></div>
               <p className="text-gray-600">正在导入回执...</p>
             </div>
           )}
 
           {status === 'success' && (
             <div className="space-y-4">
-              <div className="text-green-500 text-5xl mb-4">✅</div>
+              <div className="mb-4 text-5xl text-green-500">✅</div>
               <h1 className="text-xl font-bold text-gray-900">{message}</h1>
-              <p className="text-gray-600 text-sm">
-                你可以在「我的回执」页面查看此回执
-              </p>
-              <div className="flex gap-3 justify-center">
+              <p className="text-sm text-gray-600">你可以在「我的回执」页面查看此回执</p>
+              <div className="flex justify-center gap-3">
                 <Link href="/receipts" className="btn-primary">
                   查看我的回执
                 </Link>
@@ -91,12 +91,10 @@ function ImportContent() {
 
           {status === 'duplicate' && (
             <div className="space-y-4">
-              <div className="text-yellow-500 text-5xl mb-4">⚠️</div>
+              <div className="mb-4 text-5xl text-yellow-500">⚠️</div>
               <h1 className="text-xl font-bold text-gray-900">{message}</h1>
-              <p className="text-gray-600 text-sm">
-                这个回执已经保存在你的设备上了
-              </p>
-              <div className="flex gap-3 justify-center">
+              <p className="text-sm text-gray-600">这个回执已经保存在你的设备上了</p>
+              <div className="flex justify-center gap-3">
                 <Link href="/receipts" className="btn-primary">
                   查看我的回执
                 </Link>
@@ -106,10 +104,10 @@ function ImportContent() {
 
           {status === 'error' && (
             <div className="space-y-4">
-              <div className="text-red-500 text-5xl mb-4">❌</div>
+              <div className="mb-4 text-5xl text-red-500">❌</div>
               <h1 className="text-xl font-bold text-gray-900">导入失败</h1>
-              <p className="text-gray-600 text-sm">{message}</p>
-              <div className="flex gap-3 justify-center">
+              <p className="text-sm text-gray-600">{message}</p>
+              <div className="flex justify-center gap-3">
                 <Link href="/" className="btn-secondary">
                   返回首页
                 </Link>
@@ -124,11 +122,13 @@ function ImportContent() {
 
 export default function ReceiptImportPage() {
   return (
-    <Suspense fallback={
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </main>
-    }>
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center p-8">
+          <div className="border-primary-600 h-12 w-12 animate-spin rounded-full border-b-2"></div>
+        </main>
+      }
+    >
       <ImportContent />
     </Suspense>
   );

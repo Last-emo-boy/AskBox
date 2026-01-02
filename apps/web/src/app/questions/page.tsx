@@ -20,7 +20,6 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { getStoredAccount } from '@/lib/storage';
 
-
 import type { StoredAccount } from '@askbox/shared-types';
 
 interface Answer {
@@ -92,7 +91,9 @@ export default function QuestionsPage() {
   }, [router]);
 
   const login = async (): Promise<boolean> => {
-    if (!account) {return false;}
+    if (!account) {
+      return false;
+    }
 
     try {
       await initCrypto();
@@ -118,10 +119,7 @@ export default function QuestionsPage() {
       const challenge = await api.requestChallenge(toBase64Url(keys.signKeyPair.publicKey));
 
       // Sign challenge
-      const signature = signChallenge(
-        fromBase64Url(challenge.nonce),
-        keys.signKeyPair.privateKey
-      );
+      const signature = signChallenge(fromBase64Url(challenge.nonce), keys.signKeyPair.privateKey);
 
       // Verify
       const auth = await api.verifyChallenge(challenge.challenge_id, toBase64Url(signature));
@@ -136,11 +134,15 @@ export default function QuestionsPage() {
 
   const loadQuestions = async () => {
     try {
-      const params: { status?: string; box_id?: string } = {};
-      if (filter !== 'all') {params.status = filter;}
-      if (boxId) {params.box_id = boxId;}
+      const params: { status?: 'unopened' | 'opened' | 'answered'; box_id?: string } = {};
+      if (filter !== 'all') {
+        params.status = filter as 'unopened' | 'opened' | 'answered';
+      }
+      if (boxId) {
+        params.box_id = boxId;
+      }
 
-      const result = await api.getMyQuestions(params as { status?: string; box_id?: string });
+      const result = await api.getMyQuestions(params);
       setQuestions(result.questions);
     } catch (err) {
       if (err instanceof Error && err.message.includes('Unauthorized')) {
@@ -160,25 +162,25 @@ export default function QuestionsPage() {
   };
 
   const decryptQuestion = async (question: Question) => {
-    if (!accountKeys) {return;}
+    if (!accountKeys) {
+      return;
+    }
 
     try {
       const ciphertext = fromBase64Url(question.ciphertext_question);
       const plaintext = openSealedMessage(ciphertext, accountKeys.encKeyPair);
-      
-      setQuestions(prev =>
-        prev.map(q =>
-          q.question_id === question.question_id
-            ? { ...q, plaintext: bytesToString(plaintext) }
-            : q
+
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.question_id === question.question_id ? { ...q, plaintext: bytesToString(plaintext) } : q
         )
       );
 
       // Mark as opened
       if (!question.opened_at) {
         await api.openQuestion(question.question_id);
-        setQuestions(prev =>
-          prev.map(q =>
+        setQuestions((prev) =>
+          prev.map((q) =>
             q.question_id === question.question_id
               ? { ...q, opened_at: new Date().toISOString() }
               : q
@@ -186,8 +188,8 @@ export default function QuestionsPage() {
         );
       }
     } catch (err) {
-      setQuestions(prev =>
-        prev.map(q =>
+      setQuestions((prev) =>
+        prev.map((q) =>
           q.question_id === question.question_id
             ? { ...q, decryptError: err instanceof Error ? err.message : '解密失败' }
             : q
@@ -197,26 +199,29 @@ export default function QuestionsPage() {
   };
 
   const loadAnswer = async (question: Question) => {
-    if (!accountKeys || !question.has_answer) {return;}
+    if (!accountKeys || !question.has_answer) {
+      return;
+    }
 
-    setQuestions(prev =>
-      prev.map(q =>
-        q.question_id === question.question_id
-          ? { ...q, answerLoading: true }
-          : q
-      )
+    setQuestions((prev) =>
+      prev.map((q) => (q.question_id === question.question_id ? { ...q, answerLoading: true } : q))
     );
 
     try {
       const answerData = await api.getAnswerForOwner(question.question_id);
-      
+
       let decryptedText: string | undefined;
 
       // If private and not yet published, decrypt
-      if (answerData.visibility === 'private' && !answerData.public_text && 
-          answerData.ciphertext_answer && answerData.nonce && answerData.dek_for_owner) {
+      if (
+        answerData.visibility === 'private' &&
+        !answerData.public_text &&
+        answerData.ciphertext_answer &&
+        answerData.nonce &&
+        answerData.dek_for_owner
+      ) {
         const aad = `${answerData.answer_id}|${question.question_id}|v1`;
-        
+
         const plaintext = envelopeDecrypt(
           fromBase64Url(answerData.ciphertext_answer),
           fromBase64Url(answerData.nonce),
@@ -224,12 +229,12 @@ export default function QuestionsPage() {
           aad,
           accountKeys.encKeyPair
         );
-        
+
         decryptedText = bytesToString(plaintext);
       }
 
-      setQuestions(prev =>
-        prev.map(q =>
+      setQuestions((prev) =>
+        prev.map((q) =>
           q.question_id === question.question_id
             ? {
                 ...q,
@@ -247,11 +252,9 @@ export default function QuestionsPage() {
         )
       );
     } catch (err) {
-      setQuestions(prev =>
-        prev.map(q =>
-          q.question_id === question.question_id
-            ? { ...q, answerLoading: false }
-            : q
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.question_id === question.question_id ? { ...q, answerLoading: false } : q
         )
       );
       setError(err instanceof Error ? err.message : '加载回答失败');
@@ -259,9 +262,12 @@ export default function QuestionsPage() {
   };
 
   const handlePublish = async () => {
-    if (!publishingQuestion?.answer) {return;}
+    if (!publishingQuestion?.answer) {
+      return;
+    }
 
-    const textToPublish = publishingQuestion.answer.decrypted_text || publishingQuestion.answer.public_text;
+    const textToPublish =
+      publishingQuestion.answer.decrypted_text || publishingQuestion.answer.public_text;
     if (!textToPublish) {
       setError('没有可公开的内容');
       return;
@@ -273,8 +279,8 @@ export default function QuestionsPage() {
       await api.publishAnswer(publishingQuestion.answer.answer_id, textToPublish);
 
       // Update local state
-      setQuestions(prev =>
-        prev.map(q =>
+      setQuestions((prev) =>
+        prev.map((q) =>
           q.question_id === publishingQuestion.question_id
             ? {
                 ...q,
@@ -299,7 +305,9 @@ export default function QuestionsPage() {
   };
 
   const handleSubmitAnswer = async () => {
-    if (!answeringQuestion || !answerText.trim() || !accountKeys) {return;}
+    if (!answeringQuestion || !answerText.trim() || !accountKeys) {
+      return;
+    }
 
     setIsSubmittingAnswer(true);
 
@@ -316,12 +324,7 @@ export default function QuestionsPage() {
         const askerPubKey = fromBase64Url(answeringQuestion.receipt_pub_enc_key);
         const aad = `pending|${answeringQuestion.question_id}|v1`; // answer_id pending
 
-        const encrypted = envelopeEncrypt(
-          stringToBytes(answerText),
-          aad,
-          ownerPubKey,
-          askerPubKey
-        );
+        const encrypted = envelopeEncrypt(stringToBytes(answerText), aad, ownerPubKey, askerPubKey);
 
         await api.createPrivateAnswer(
           answeringQuestion.question_id,
@@ -333,11 +336,9 @@ export default function QuestionsPage() {
       }
 
       // Update question state
-      setQuestions(prev =>
-        prev.map(q =>
-          q.question_id === answeringQuestion.question_id
-            ? { ...q, has_answer: true }
-            : q
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.question_id === answeringQuestion.question_id ? { ...q, has_answer: true } : q
         )
       );
 
@@ -359,16 +360,16 @@ export default function QuestionsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="border-primary-600 h-12 w-12 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
 
   return (
     <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+      <div className="mx-auto max-w-4xl">
+        <header className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">收到的问题</h1>
           <Link href="/dashboard" className="btn-secondary">
             返回控制台
@@ -377,7 +378,7 @@ export default function QuestionsPage() {
 
         {needPassword && account?.encrypted_seed && (
           <div className="card mb-6">
-            <h2 className="text-lg font-semibold mb-4">请输入密码以继续</h2>
+            <h2 className="mb-4 text-lg font-semibold">请输入密码以继续</h2>
             <div className="flex gap-3">
               <input
                 type="password"
@@ -390,21 +391,19 @@ export default function QuestionsPage() {
                 登录
               </button>
             </div>
-            {error && (
-              <p className="text-red-600 text-sm mt-2">{error}</p>
-            )}
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
         )}
 
         {!needPassword && (
           <>
             {/* Filter */}
-            <div className="flex gap-2 mb-6">
+            <div className="mb-6 flex gap-2">
               {(['all', 'unopened', 'opened', 'answered'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-lg text-sm ${
+                  className={`rounded-lg px-4 py-2 text-sm ${
                     filter === f
                       ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -421,21 +420,21 @@ export default function QuestionsPage() {
             {/* Questions list */}
             <div className="space-y-4">
               {questions.length === 0 ? (
-                <div className="card text-center text-gray-500 py-12">
+                <div className="card py-12 text-center text-gray-500">
                   <p>暂无问题</p>
                 </div>
               ) : (
                 questions.map((question) => (
                   <div key={question.question_id} className="card">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex gap-2 items-center">
+                    <div className="mb-3 flex items-start justify-between">
+                      <div className="flex items-center gap-2">
                         {!question.opened_at && (
-                          <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                          <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
                             未拆开
                           </span>
                         )}
                         {question.has_answer && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                          <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">
                             已回答
                           </span>
                         )}
@@ -446,11 +445,11 @@ export default function QuestionsPage() {
                     </div>
 
                     {question.plaintext ? (
-                      <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                      <div className="mb-3 rounded-lg bg-gray-50 p-4">
                         <p className="whitespace-pre-wrap">{question.plaintext}</p>
                       </div>
                     ) : question.decryptError ? (
-                      <div className="bg-red-50 rounded-lg p-4 mb-3 text-red-600">
+                      <div className="mb-3 rounded-lg bg-red-50 p-4 text-red-600">
                         {question.decryptError}
                       </div>
                     ) : (
@@ -478,7 +477,7 @@ export default function QuestionsPage() {
                       <div className="mt-3 border-t pt-3">
                         {question.answerLoading ? (
                           <div className="flex items-center gap-2 text-gray-500">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                            <div className="border-primary-600 h-4 w-4 animate-spin rounded-full border-b-2"></div>
                             <span>加载回答中...</span>
                           </div>
                         ) : question.answer ? (
@@ -486,29 +485,30 @@ export default function QuestionsPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-gray-500">我的回答：</span>
                               {question.answer.public_text ? (
-                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
+                                <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
                                   已公开
                                 </span>
                               ) : (
-                                <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                <span className="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
                                   私密
                                 </span>
                               )}
                             </div>
-                            <div className="bg-blue-50 rounded-lg p-3">
+                            <div className="rounded-lg bg-blue-50 p-3">
                               <p className="whitespace-pre-wrap text-sm">
                                 {question.answer.public_text || question.answer.decrypted_text}
                               </p>
                             </div>
                             {/* One-click publish button for private answers */}
-                            {question.answer.visibility === 'private' && !question.answer.public_text && (
-                              <button
-                                onClick={() => setPublishingQuestion(question)}
-                                className="btn-primary text-sm"
-                              >
-                                🌐 一键公开
-                              </button>
-                            )}
+                            {question.answer.visibility === 'private' &&
+                              !question.answer.public_text && (
+                                <button
+                                  onClick={() => setPublishingQuestion(question)}
+                                  className="btn-primary text-sm"
+                                >
+                                  🌐 一键公开
+                                </button>
+                              )}
                           </div>
                         ) : (
                           <button
@@ -529,12 +529,12 @@ export default function QuestionsPage() {
 
         {/* Answer modal */}
         {answeringQuestion && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="card max-w-lg w-full max-h-[80vh] overflow-y-auto">
-              <h2 className="text-xl font-semibold mb-4">回答问题</h2>
-              
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-500 mb-1">问题：</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="card max-h-[80vh] w-full max-w-lg overflow-y-auto">
+              <h2 className="mb-4 text-xl font-semibold">回答问题</h2>
+
+              <div className="mb-4 rounded-lg bg-gray-50 p-4">
+                <p className="mb-1 text-sm text-gray-500">问题：</p>
                 <p>{answeringQuestion.plaintext}</p>
               </div>
 
@@ -571,9 +571,7 @@ export default function QuestionsPage() {
                   placeholder="输入你的回答..."
                 />
 
-                {error && (
-                  <p className="text-red-600 text-sm">{error}</p>
-                )}
+                {error && <p className="text-sm text-red-600">{error}</p>}
 
                 <div className="flex gap-3">
                   <button
@@ -601,28 +599,27 @@ export default function QuestionsPage() {
 
         {/* Publish confirmation modal */}
         {publishingQuestion && publishingQuestion.answer && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="card max-w-lg w-full">
-              <h2 className="text-xl font-semibold mb-4">确认公开回答</h2>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="card w-full max-w-lg">
+              <h2 className="mb-4 text-xl font-semibold">确认公开回答</h2>
+
+              <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                 <p className="text-sm text-yellow-800">
                   ⚠️ 公开后，任何人都可以看到这个回答。此操作不可撤销。
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-500 mb-1">问题：</p>
-                <p className="text-sm mb-3">{publishingQuestion.plaintext}</p>
-                <p className="text-sm text-gray-500 mb-1">回答（将被公开）：</p>
-                <p className="text-sm whitespace-pre-wrap">
-                  {publishingQuestion.answer.decrypted_text || publishingQuestion.answer.public_text}
+              <div className="mb-4 rounded-lg bg-gray-50 p-4">
+                <p className="mb-1 text-sm text-gray-500">问题：</p>
+                <p className="mb-3 text-sm">{publishingQuestion.plaintext}</p>
+                <p className="mb-1 text-sm text-gray-500">回答（将被公开）：</p>
+                <p className="whitespace-pre-wrap text-sm">
+                  {publishingQuestion.answer.decrypted_text ||
+                    publishingQuestion.answer.public_text}
                 </p>
               </div>
 
-              {error && (
-                <p className="text-red-600 text-sm mb-4">{error}</p>
-              )}
+              {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
               <div className="flex gap-3">
                 <button
