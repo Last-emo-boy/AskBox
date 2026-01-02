@@ -158,7 +158,7 @@ jobs:
           DATABASE_URL: postgresql://askbox:askbox_test_password@localhost:5432/askbox_test
 
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter @askbox/e2e exec playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: pnpm test:e2e
