@@ -7,10 +7,15 @@ import {
   encryptSeedWithPassword,
   toBase64Url,
 } from '@askbox/crypto';
+import { AlertTriangle, ArrowLeft, Loader2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { saveAccount } from '@/lib/storage';
 
 import type { StoredAccount } from '@askbox/shared-types';
@@ -72,88 +77,107 @@ export default function CreateAccountPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-md w-full">
-        <div className="card">
-          <h1 className="text-2xl font-bold text-center mb-6">创建新账户</h1>
+    <main className="min-h-screen bg-zinc-50">
+      <div className="mx-auto max-w-md px-6 py-16">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          返回首页
+        </Link>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">创建新账户</CardTitle>
+            <CardDescription>设置密码保护你的私钥</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="usePassword"
                 checked={usePassword}
                 onChange={(e) => setUsePassword(e.target.checked)}
-                className="w-4 h-4"
+                className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
               />
-              <label htmlFor="usePassword" className="text-sm text-gray-600">
+              <Label htmlFor="usePassword" className="text-sm font-normal text-zinc-600">
                 使用密码保护种子（强烈推荐）
-              </label>
+              </Label>
             </div>
 
             {usePassword && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    设置密码
-                  </label>
-                  <input
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">设置密码</Label>
+                  <Input
+                    id="password"
                     type="password"
-                    className="input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="至少 8 个字符"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    确认密码
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">确认密码</Label>
+                  <Input
+                    id="confirmPassword"
                     type="password"
-                    className="input"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="再次输入密码"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             {!usePassword && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-                ⚠️ 不使用密码保护时，任何能访问此设备的人都可能获取你的私钥。请确保设备安全。
+              <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                <p className="text-sm text-amber-800">
+                  不使用密码保护时，任何能访问此设备的人都可能获取你的私钥。请确保设备安全。
+                </p>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
                 {error}
               </div>
             )}
 
-            <button
-              onClick={handleCreate}
-              disabled={isCreating}
-              className="btn-primary w-full"
-            >
-              {isCreating ? '创建中...' : '创建账户'}
-            </button>
+            <Button onClick={handleCreate} disabled={isCreating} className="w-full" size="lg">
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  创建中...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  创建账户
+                </>
+              )}
+            </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-zinc-500">
               已有账户？
-              <Link href="/account/import" className="text-primary-600 hover:underline ml-1">
+              <Link
+                href="/account/import"
+                className="ml-1 text-zinc-900 underline-offset-4 hover:underline"
+              >
                 导入账户
               </Link>
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>创建账户后，请务必备份你的种子</p>
-          <p>种子是恢复账户的唯一方式</p>
-        </div>
+        <p className="mt-6 text-center text-sm text-zinc-500">
+          创建账户后，请务必备份你的种子
+          <br />
+          种子是恢复账户的唯一方式
+        </p>
       </div>
     </main>
   );

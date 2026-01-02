@@ -1,9 +1,20 @@
 'use client';
 
+import {
+  ArrowRight,
+  Inbox,
+  Loader2,
+  MessageSquare,
+  Settings,
+  ShieldAlert,
+  Ticket,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getStoredAccount } from '@/lib/storage';
 
 export default function DashboardPage() {
@@ -24,64 +35,117 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">控制台</h1>
-          <Link href="/account" className="btn-secondary">
-            账户管理
-          </Link>
+    <main className="min-h-screen bg-zinc-50">
+      <div className="mx-auto max-w-5xl px-6 py-12">
+        <header className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">控制台</h1>
+            <p className="mt-1 text-zinc-500">管理你的提问箱和问题</p>
+          </div>
+          <Button asChild variant="outline">
+            <Link href="/account">
+              <Settings className="mr-2 h-4 w-4" />
+              账户管理
+            </Link>
+          </Button>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">📦 我的提问箱</h2>
-            <p className="text-gray-600 mb-4">创建和管理你的提问箱</p>
-            <Link href="/boxes" className="btn-primary inline-block">
-              管理提问箱
-            </Link>
-          </div>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Card className="group transition-all hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-colors group-hover:bg-zinc-900 group-hover:text-white">
+                <Inbox className="h-6 w-6" />
+              </div>
+              <CardTitle>我的提问箱</CardTitle>
+              <CardDescription>创建和管理你的提问箱</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/boxes">
+                  管理提问箱
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">📬 收到的问题</h2>
-            <p className="text-gray-600 mb-4">查看和回答收到的问题</p>
-            <Link href="/questions" className="btn-primary inline-block">
-              查看问题
-            </Link>
-          </div>
+          <Card className="group transition-all hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-colors group-hover:bg-zinc-900 group-hover:text-white">
+                <MessageSquare className="h-6 w-6" />
+              </div>
+              <CardTitle>收到的问题</CardTitle>
+              <CardDescription>查看和回答收到的问题</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/questions">
+                  查看问题
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">🎫 我的回执</h2>
-            <p className="text-gray-600 mb-4">查看你提过的问题的回答</p>
-            <Link href="/receipts" className="btn-primary inline-block">
-              查看回执
-            </Link>
-          </div>
+          <Card className="group transition-all hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-colors group-hover:bg-zinc-900 group-hover:text-white">
+                <Ticket className="h-6 w-6" />
+              </div>
+              <CardTitle>我的回执</CardTitle>
+              <CardDescription>查看你提过的问题的回答</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/receipts">
+                  查看回执
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">⚙️ 设置</h2>
-            <p className="text-gray-600 mb-4">导出种子、修改密码等</p>
-            <Link href="/account" className="btn-secondary inline-block">
-              前往设置
-            </Link>
-          </div>
+          <Card className="group transition-all hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-colors group-hover:bg-zinc-900 group-hover:text-white">
+                <Settings className="h-6 w-6" />
+              </div>
+              <CardTitle>账户设置</CardTitle>
+              <CardDescription>导出种子、修改密码等</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="secondary" className="w-full">
+                <Link href="/account">
+                  前往设置
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="mt-8 card bg-primary-50 border-primary-200">
-          <h3 className="font-semibold text-primary-800 mb-2">🔐 安全提示</h3>
-          <ul className="text-sm text-primary-700 space-y-1">
-            <li>• 请定期备份你的账户种子</li>
-            <li>• 种子是恢复账户的唯一方式，请妥善保管</li>
-            <li>• 不要将种子分享给任何人</li>
-          </ul>
-        </div>
+        <Card className="mt-8 border-amber-200 bg-amber-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-amber-800">
+              <ShieldAlert className="h-5 w-5" />
+              <CardTitle className="text-base">安全提示</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ul className="space-y-1 text-sm text-amber-700">
+              <li>• 请定期备份你的账户种子</li>
+              <li>• 种子是恢复账户的唯一方式，请妥善保管</li>
+              <li>• 不要将种子分享给任何人</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

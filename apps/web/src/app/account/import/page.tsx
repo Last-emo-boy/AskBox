@@ -7,10 +7,16 @@ import {
   fromBase64Url,
   toBase64Url,
 } from '@askbox/crypto';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { saveAccount } from '@/lib/storage';
 
 import type { StoredAccount } from '@askbox/shared-types';
@@ -83,89 +89,103 @@ export default function ImportAccountPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-md w-full">
-        <div className="card">
-          <h1 className="text-2xl font-bold text-center mb-6">导入账户</h1>
+    <main className="min-h-screen bg-zinc-50">
+      <div className="mx-auto max-w-md px-6 py-16">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          返回首页
+        </Link>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                输入种子
-              </label>
-              <textarea
-                className="input min-h-[100px] font-mono text-sm"
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">导入账户</CardTitle>
+            <CardDescription>使用已有的种子恢复账户</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="seed">输入种子</Label>
+              <Textarea
+                id="seed"
+                className="font-mono text-sm"
                 value={seedInput}
                 onChange={(e) => setSeedInput(e.target.value)}
                 placeholder="粘贴你的种子（base64url 格式）"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="usePassword"
                 checked={usePassword}
                 onChange={(e) => setUsePassword(e.target.checked)}
-                className="w-4 h-4"
+                className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
               />
-              <label htmlFor="usePassword" className="text-sm text-gray-600">
+              <Label htmlFor="usePassword" className="text-sm font-normal text-zinc-600">
                 使用密码保护种子（强烈推荐）
-              </label>
+              </Label>
             </div>
 
             {usePassword && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    设置密码
-                  </label>
-                  <input
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">设置密码</Label>
+                  <Input
+                    id="password"
                     type="password"
-                    className="input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="至少 8 个字符"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    确认密码
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">确认密码</Label>
+                  <Input
+                    id="confirmPassword"
                     type="password"
-                    className="input"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="再次输入密码"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
                 {error}
               </div>
             )}
 
-            <button
-              onClick={handleImport}
-              disabled={isImporting}
-              className="btn-primary w-full"
-            >
-              {isImporting ? '导入中...' : '导入账户'}
-            </button>
+            <Button onClick={handleImport} disabled={isImporting} className="w-full" size="lg">
+              {isImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  导入中...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  导入账户
+                </>
+              )}
+            </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-zinc-500">
               还没有账户？
-              <Link href="/account/create" className="text-primary-600 hover:underline ml-1">
+              <Link
+                href="/account/create"
+                className="ml-1 text-zinc-900 underline-offset-4 hover:underline"
+              >
                 创建新账户
               </Link>
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

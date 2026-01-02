@@ -6,15 +6,19 @@ import {
   sealMessage,
   stringToBytes,
   toBase64Url,
+  fromBase64Url,
 } from '@askbox/crypto';
+import { AlertTriangle, ArrowLeft, Check, Copy, Loader2, Lock, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { ReceiptQRCode } from '@/components/QRCode';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
 import { saveReceipt } from '@/lib/storage';
-
 
 interface BoxInfo {
   box_id: string;
@@ -32,6 +36,7 @@ export default function BoxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
   const [success, setSuccess] = useState<{
     question_id: string;
     asker_token: string;
@@ -43,7 +48,7 @@ export default function BoxPage() {
       try {
         const data = await api.getBox(slug);
         setBox(data);
-      } catch (err) {
+      } catch {
         setError('提问箱不存在或已关闭');
       } finally {
         setIsLoading(false);
@@ -53,7 +58,9 @@ export default function BoxPage() {
   }, [slug]);
 
   const handleSubmit = async () => {
-    if (!box || !question.trim()) {return;}
+    if (!box || !question.trim()) {
+      return;
+    }
 
     setError('');
     setIsSubmitting(true);
@@ -96,139 +103,176 @@ export default function BoxPage() {
     }
   };
 
+  const handleCopy = async () => {
+    if (success) {
+      await navigator.clipboard.writeText(success.receipt_seed);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
       </div>
     );
   }
 
   if (!box) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <div className="card text-center max-w-md">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">提问箱不存在</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Link href="/" className="btn-primary">
-            返回首页
-          </Link>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-zinc-50 p-6">
+        <Card className="max-w-md text-center">
+          <CardHeader>
+            <CardTitle>提问箱不存在</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/">返回首页</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-lg w-full">
-        <div className="card">
-          <h1 className="text-2xl font-bold text-center mb-2">
-            向 {slug} 提问
-          </h1>
-          <p className="text-center text-gray-600 mb-6">
-            你的问题将被端到端加密，只有箱主能看到
-          </p>
+    <main className="min-h-screen bg-zinc-50">
+      <div className="mx-auto max-w-lg px-6 py-16">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          返回首页
+        </Link>
 
-          {success ? (
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-semibold text-green-800 mb-2">✅ 提问成功！</h3>
-                <p className="text-sm text-green-700 mb-3">
-                  请保存以下回执信息，用于查看箱主的回复：
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">向 {slug} 提问</CardTitle>
+            <CardDescription className="flex items-center justify-center gap-1.5">
+              <Lock className="h-3.5 w-3.5" />
+              你的问题将被端到端加密，只有箱主能看到
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {success ? (
+              <div className="space-y-6">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="mb-2 flex items-center gap-2 font-semibold text-emerald-800">
+                    <Check className="h-5 w-5" />
+                    提问成功！
+                  </div>
+                  <p className="mb-4 text-sm text-emerald-700">
+                    请保存以下回执信息，用于查看箱主的回复：
+                  </p>
+                  <div className="rounded-lg border border-emerald-200 bg-white p-3">
+                    <p className="mb-1 text-xs text-zinc-500">回执码（请妥善保存）</p>
+                    <p className="break-all font-mono text-sm">{success.receipt_seed}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                  <p className="text-sm text-amber-800">
+                    回执码是查看私密回答的唯一凭证，丢失后无法恢复！
+                  </p>
+                </div>
+
+                <div className="flex justify-center">
+                  <ReceiptQRCode
+                    receiptData={{
+                      question_id: success.question_id,
+                      asker_token: success.asker_token,
+                      receipt_seed: success.receipt_seed,
+                    }}
+                    size={180}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleCopy}
+                    className="flex-1"
+                    variant={copied ? 'secondary' : 'default'}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        已复制
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="mr-2 h-4 w-4" />
+                        复制回执码
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={() => setSuccess(null)}>
+                    继续提问
+                  </Button>
+                </div>
+
+                <Link
+                  href="/receipts"
+                  className="block text-center text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
+                >
+                  在「我的回执」中查看
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Textarea
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="输入你的问题..."
+                    className="min-h-[150px] resize-none"
+                    maxLength={5000}
+                  />
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>{question.length} / 5000</span>
+                    <span className="flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      端到端加密
+                    </span>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !question.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      提交中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      提交问题
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-center text-xs text-zinc-500">
+                  提交后将生成回执码，请妥善保存以查看回复
                 </p>
-                <div className="bg-white rounded p-3 border text-sm">
-                  <p className="text-gray-500 mb-1">回执码（请妥善保存）：</p>
-                  <p className="font-mono break-all">{success.receipt_seed}</p>
-                </div>
               </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-                ⚠️ 回执码是查看私密回答的唯一凭证，丢失后无法恢复！
-              </div>
-
-              <ReceiptQRCode
-                receiptData={{
-                  question_id: success.question_id,
-                  asker_token: success.asker_token,
-                  receipt_seed: success.receipt_seed,
-                }}
-                size={200}
-              />
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(success.receipt_seed);
-                    alert('回执码已复制');
-                  }}
-                  className="btn-primary flex-1"
-                >
-                  复制回执码
-                </button>
-                <button
-                  onClick={() => setSuccess(null)}
-                  className="btn-secondary"
-                >
-                  继续提问
-                </button>
-              </div>
-
-              <Link
-                href="/receipts"
-                className="block text-center text-primary-600 hover:underline text-sm"
-              >
-                在「我的回执」中查看
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <textarea
-                className="input min-h-[150px] resize-none"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="输入你的问题..."
-                maxLength={5000}
-              />
-
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>{question.length} / 5000</span>
-                <span>🔒 端到端加密</span>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !question.trim()}
-                className="btn-primary w-full"
-              >
-                {isSubmitting ? '提交中...' : '提交问题'}
-              </button>
-
-              <p className="text-xs text-gray-500 text-center">
-                提交后将生成回执码，请妥善保存以查看回复
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </main>
   );
-}
-
-// Helper function (should be imported from crypto)
-function fromBase64Url(data: string): Uint8Array {
-  // This should use the crypto library's function
-  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  const binary = atob(base64 + padding);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 }
