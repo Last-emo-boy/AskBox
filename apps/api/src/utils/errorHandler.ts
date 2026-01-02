@@ -16,7 +16,7 @@ export enum ErrorCode {
   CONFLICT = 'CONFLICT',
   RATE_LIMITED = 'RATE_LIMITED',
   PAYLOAD_TOO_LARGE = 'PAYLOAD_TOO_LARGE',
-  
+
   // Server errors
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
@@ -58,7 +58,7 @@ export function createErrorResponse(
   details?: unknown
 ): ApiErrorResponse {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   return {
     error: {
       code,
@@ -91,7 +91,7 @@ function statusToErrorCode(status: number): ErrorCode {
  * Format Zod validation errors for safe display
  */
 function formatValidationErrors(error: ZodError): string {
-  const issues = error.issues.map(issue => {
+  const issues = error.issues.map((issue) => {
     const path = issue.path.join('.');
     return path ? `${path}: ${issue.message}` : issue.message;
   });
@@ -103,17 +103,20 @@ function formatValidationErrors(error: ZodError): string {
  */
 function sanitizeErrorMessage(message: string): string {
   // Remove stack traces
-  const noStack = message.split('\n')[0];
-  
+  const noStack = message.split('\n')[0] || message;
+
   // Remove file paths
   const noPath = noStack.replace(/\/[\w/.-]+/g, '[path]');
-  
+
   // Remove potential SQL/DB info
-  const noDbInfo = noPath.replace(/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|TABLE|COLUMN|DATABASE|postgresql|prisma)\b/gi, '[db]');
-  
+  const noDbInfo = noPath.replace(
+    /\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|TABLE|COLUMN|DATABASE|postgresql|prisma)\b/gi,
+    '[db]'
+  );
+
   // Remove potential secrets (anything that looks like a token/key)
   const noSecrets = noDbInfo.replace(/[a-zA-Z0-9_-]{20,}/g, '[redacted]');
-  
+
   // Truncate if too long
   return noSecrets.length > 200 ? noSecrets.substring(0, 200) + '...' : noSecrets;
 }
@@ -122,48 +125,46 @@ function sanitizeErrorMessage(message: string): string {
  * Global error handler for Fastify
  */
 export function createErrorHandler() {
-  return function errorHandler(
-    error: FastifyError,
-    request: FastifyRequest,
-    reply: FastifyReply
-  ) {
+  return function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
     // Log error internally with full details
-    request.log.error({
-      err: error,
-      requestId: request.id,
-      url: request.url,
-      method: request.method,
-    }, 'Request error');
+    request.log.error(
+      {
+        err: error,
+        requestId: request.id,
+        url: request.url,
+        method: request.method,
+      },
+      'Request error'
+    );
 
     // Handle Zod validation errors
     if (error instanceof ZodError) {
-      return reply.status(400).send(
-        createErrorResponse(
-          ErrorCode.INVALID_REQUEST,
-          'Validation failed',
-          formatValidationErrors(error)
-        )
-      );
+      return reply
+        .status(400)
+        .send(
+          createErrorResponse(
+            ErrorCode.INVALID_REQUEST,
+            'Validation failed',
+            formatValidationErrors(error)
+          )
+        );
     }
 
     // Handle rate limiting
     if (error.statusCode === 429) {
       securityLogger.rateLimitExceeded(request, request.url);
-      return reply.status(429).send(
-        createErrorResponse(ErrorCode.RATE_LIMITED)
-      );
+      return reply.status(429).send(createErrorResponse(ErrorCode.RATE_LIMITED));
     }
 
     // Handle known status codes
     if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
       const code = statusToErrorCode(error.statusCode);
-      const message = error.message && error.message.length < 100 
-        ? sanitizeErrorMessage(error.message)
-        : undefined;
-      
-      return reply.status(error.statusCode).send(
-        createErrorResponse(code, message)
-      );
+      const message =
+        error.message && error.message.length < 100
+          ? sanitizeErrorMessage(error.message)
+          : undefined;
+
+      return reply.status(error.statusCode).send(createErrorResponse(code, message));
     }
 
     // Log critical errors
@@ -179,9 +180,7 @@ export function createErrorHandler() {
 
     // All other errors - return generic message
     const status = error.statusCode || 500;
-    return reply.status(status).send(
-      createErrorResponse(statusToErrorCode(status))
-    );
+    return reply.status(status).send(createErrorResponse(statusToErrorCode(status)));
   };
 }
 

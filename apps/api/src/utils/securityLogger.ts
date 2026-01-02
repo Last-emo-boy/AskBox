@@ -10,21 +10,21 @@ export enum SecurityEventType {
   AUTH_VERIFY_SUCCESS = 'auth.verify.success',
   AUTH_VERIFY_FAILED = 'auth.verify.failed',
   AUTH_TOKEN_INVALID = 'auth.token.invalid',
-  
+
   // Rate limiting events
   RATE_LIMIT_EXCEEDED = 'ratelimit.exceeded',
   RATE_LIMIT_WARNING = 'ratelimit.warning',
-  
+
   // Resource access events
   BOX_ACCESS_DENIED = 'box.access.denied',
   QUESTION_ACCESS_DENIED = 'question.access.denied',
   ANSWER_ACCESS_DENIED = 'answer.access.denied',
-  
+
   // Suspicious activity
   SUSPICIOUS_REQUEST = 'suspicious.request',
   INVALID_INPUT = 'invalid.input',
   CRYPTO_ERROR = 'crypto.error',
-  
+
   // Resource events
   BOX_CREATED = 'box.created',
   QUESTION_SUBMITTED = 'question.submitted',
@@ -62,14 +62,19 @@ interface SecurityEventData {
  * Extract request metadata for logging
  */
 function extractRequestInfo(request?: FastifyRequest): SecurityEventData['request'] | undefined {
-  if (!request) {return undefined;}
+  if (!request) {
+    return undefined;
+  }
 
   // Get IP from headers or socket
   const xff = request.headers['x-forwarded-for'];
   let ip = request.ip || 'unknown';
   if (xff) {
-    const ips = (Array.isArray(xff) ? xff[0] : xff).split(',');
-    ip = ips[0].trim();
+    const xffValue = Array.isArray(xff) ? xff[0] : xff;
+    if (xffValue) {
+      const ips = xffValue.split(',');
+      ip = ips[0]?.trim() || ip;
+    }
   }
 
   return {
@@ -145,17 +150,27 @@ class SecurityLogger {
    * Sanitize details to remove sensitive information
    */
   private sanitizeDetails(details?: Record<string, unknown>): Record<string, unknown> | undefined {
-    if (!details) {return undefined;}
+    if (!details) {
+      return undefined;
+    }
 
     const sensitiveKeys = [
-      'password', 'secret', 'token', 'key', 'signature',
-      'private', 'credential', 'seed', 'nonce', 'ciphertext',
+      'password',
+      'secret',
+      'token',
+      'key',
+      'signature',
+      'private',
+      'credential',
+      'seed',
+      'nonce',
+      'ciphertext',
     ];
 
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(details)) {
       const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some(sk => lowerKey.includes(sk))) {
+      if (sensitiveKeys.some((sk) => lowerKey.includes(sk))) {
         sanitized[key] = '[REDACTED]';
       } else if (typeof value === 'object' && value !== null) {
         sanitized[key] = this.sanitizeDetails(value as Record<string, unknown>);
@@ -215,7 +230,11 @@ class SecurityLogger {
     );
   }
 
-  suspiciousActivity(request: FastifyRequest, description: string, details?: Record<string, unknown>): void {
+  suspiciousActivity(
+    request: FastifyRequest,
+    description: string,
+    details?: Record<string, unknown>
+  ): void {
     this.log(
       SecurityEventType.SUSPICIOUS_REQUEST,
       SecuritySeverity.WARNING,

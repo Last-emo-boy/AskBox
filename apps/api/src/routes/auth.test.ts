@@ -19,7 +19,9 @@ vi.mock('../utils/rateLimit.js', () => {
     boxCreationRateLimit: mockRateLimiter,
     answerCreationRateLimit: mockRateLimiter,
     getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
-    checkRateLimit: vi.fn().mockResolvedValue({ limited: false, remaining: 100, resetAt: Date.now() + 60000 }),
+    checkRateLimit: vi
+      .fn()
+      .mockResolvedValue({ limited: false, remaining: 100, resetAt: Date.now() + 60000 }),
   };
 });
 
@@ -67,7 +69,7 @@ describe('Auth Routes', () => {
 
   beforeAll(async () => {
     await initCrypto();
-    
+
     app = Fastify({ logger: false });
     app.setErrorHandler(createErrorHandler());
     await app.register(jwt, { secret: config.jwtSecret });
@@ -85,6 +87,7 @@ describe('Auth Routes', () => {
         id: 'challenge-id-123',
         nonce: Buffer.alloc(32),
         pubSignKey: Buffer.from(keys.signKeyPair.publicKey),
+        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         usedAt: null,
       };
@@ -129,6 +132,7 @@ describe('Auth Routes', () => {
         id: challengeId,
         nonce: Buffer.from(nonce),
         pubSignKey: Buffer.from(keys.signKeyPair.publicKey),
+        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         usedAt: null,
       };
@@ -142,7 +146,10 @@ describe('Auth Routes', () => {
       };
 
       vi.mocked(prisma.authChallenge.findUnique).mockResolvedValue(mockChallenge);
-      vi.mocked(prisma.authChallenge.update).mockResolvedValue({ ...mockChallenge, usedAt: new Date() });
+      vi.mocked(prisma.authChallenge.update).mockResolvedValue({
+        ...mockChallenge,
+        usedAt: new Date(),
+      });
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
 
       const response = await app.inject({
@@ -183,6 +190,7 @@ describe('Auth Routes', () => {
         id: challengeId,
         nonce: Buffer.alloc(32),
         pubSignKey: Buffer.alloc(32),
+        createdAt: new Date(Date.now() - 60000),
         expiresAt: new Date(Date.now() - 1000), // Already expired
         usedAt: null,
       };

@@ -69,12 +69,12 @@ async function checkRateLimit(
 
   const results = await pipeline.exec();
 
-  if (!results) {
+  if (!results || !results[1]) {
     // Redis error, fail open
     return { limited: false, remaining: max, resetAt: now + windowSec * 1000 };
   }
 
-  const currentCount = (results[1][1] as number) || 0;
+  const currentCount = (results[1]?.[1] as number) || 0;
   const limited = currentCount >= max;
   const remaining = Math.max(0, max - currentCount - 1);
 
@@ -92,14 +92,23 @@ function getClientIp(request: FastifyRequest): string {
   // Check X-Forwarded-For header (for reverse proxies)
   const xff = request.headers['x-forwarded-for'];
   if (xff) {
-    const ips = (Array.isArray(xff) ? xff[0] : xff).split(',');
-    return ips[0].trim();
+    const xffValue = Array.isArray(xff) ? xff[0] : xff;
+    if (xffValue) {
+      const ips = xffValue.split(',');
+      const firstIp = ips[0]?.trim();
+      if (firstIp) {
+        return firstIp;
+      }
+    }
   }
 
   // Check X-Real-IP header
   const realIp = request.headers['x-real-ip'];
   if (realIp) {
-    return Array.isArray(realIp) ? realIp[0] : realIp;
+    const realIpValue = Array.isArray(realIp) ? realIp[0] : realIp;
+    if (realIpValue) {
+      return realIpValue;
+    }
   }
 
   // Fall back to socket address
@@ -110,10 +119,7 @@ function getClientIp(request: FastifyRequest): string {
  * Create a rate limit hook for Fastify routes
  */
 export function createRateLimiter(options: RateLimitOptions) {
-  return async function rateLimitHook(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ): Promise<void> {
+  return async function rateLimitHook(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // Skip in development if configured
     if (options.skipInDev && process.env.NODE_ENV === 'development') {
       return;
@@ -121,12 +127,7 @@ export function createRateLimiter(options: RateLimitOptions) {
 
     try {
       const keys = options.keyGenerator(request);
-      const result = await checkRateLimit(
-        keys,
-        options.max,
-        options.windowSec,
-        options.prefix
-      );
+      const result = await checkRateLimit(keys, options.max, options.windowSec, options.prefix);
 
       // Set rate limit headers
       reply.header('X-RateLimit-Limit', options.max.toString());
