@@ -15,7 +15,7 @@ import {
 } from '@askbox/crypto';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 import { api } from '@/lib/api';
 import { getStoredAccount } from '@/lib/storage';
@@ -48,6 +48,20 @@ interface Question {
 }
 
 export default function QuestionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="container mx-auto max-w-4xl px-4 py-8">
+          <div className="text-center">加载中...</div>
+        </main>
+      }
+    >
+      <QuestionsContent />
+    </Suspense>
+  );
+}
+
+function QuestionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const boxId = searchParams.get('box_id');
