@@ -152,6 +152,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm db:generate
 
+      - name: Build packages
+        run: pnpm build
+
       - name: Run migrations
         run: pnpm db:push
         env:
