@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.next
+out
+
+# Coverage
+coverage
+
+# Generated
+*.generated.*
+*.d.ts
+
+# Config files (keep formatting as-is)
+*.config.js
+*.config.mjs
+*.config.ts
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment
+.env*
+
+# Editor
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db

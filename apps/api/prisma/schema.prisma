@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  pubSignKey  Bytes    @unique @map("pub_sign_key")
+  pubEncKey   Bytes    @map("pub_enc_key")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  boxes       Box[]
+  
+  @@map("users")
+}
+
+model Box {
+  id            String     @id @default(uuid()) @db.Uuid
+  slug          String     @unique
+  ownerUserId   String     @map("owner_user_id") @db.Uuid
+  settings      Json       @default("{}")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  
+  owner         User       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  questions     Question[]
+  
+  @@index([ownerUserId])
+  @@map("boxes")
+}
+
+model Question {
+  id                  String    @id @default(uuid()) @db.Uuid
+  boxId               String    @map("box_id") @db.Uuid
+  ciphertextQuestion  Bytes     @map("ciphertext_question")
+  receiptPubEncKey    Bytes?    @map("receipt_pub_enc_key")
+  askerTokenHash      Bytes     @unique @map("asker_token_hash")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  openedAt            DateTime? @map("opened_at")
+  openedSig           Bytes?    @map("opened_sig")
+  
+  box                 Box       @relation(fields: [boxId], references: [id], onDelete: Cascade)
+  answer              Answer?
+  
+  @@index([boxId])
+  @@index([createdAt])
+  @@map("questions")
+}
+
+enum Visibility {
+  public
+  private
+}
+
+model Answer {
+  id                String      @id @default(uuid()) @db.Uuid
+  questionId        String      @unique @map("question_id") @db.Uuid
+  visibility        Visibility
+  publicText        String?     @map("public_text")
+  ciphertextAnswer  Bytes?      @map("ciphertext_answer")
+  nonce             Bytes?
+  dekForOwner       Bytes?      @map("dek_for_owner")
+  dekForAsker       Bytes?      @map("dek_for_asker")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  publishedAt       DateTime?   @map("published_at")
+  
+  question          Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@map("answers")
+}
+
+model AuthChallenge {
+  id          String   @id @default(uuid()) @db.Uuid
+  nonce       Bytes
+  pubSignKey  Bytes    @map("pub_sign_key")
+  expiresAt   DateTime @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@index([expiresAt])
+  @@map("auth_challenges")
+}

@@ -1,86 +1,91 @@
-# AskBox
+# AskBox - 匿名提问箱系统
 
-AskBox是一个基于Node.js的网页应用，允许用户匿名地向指定邮箱的用户提问。用户可以通过邮箱登录来查看和回答收到的问题。
+一个支持端到端加密的隐私保护问答平台。
 
-## 开始
+## 功能特性
 
-本节将指导你如何在本地机器上安装和运行匿名提问箱项目，用于开发和测试目的。
+- ✅ 允许匿名提问
+- ✅ 回执/二维码取回私密回答
+- ✅ 私密回答可一键公开
+- ✅ 拆开统计与时间戳
+- 🔜 附件支持（TODO）
 
-### 先决条件
+## 技术栈
 
-- Node.js
-- MongoDB
+### 前端 (apps/web)
+- Next.js (App Router) + TypeScript
+- IndexedDB（本地存储加密种子与回执信息）
+- libsodium.js（sealed box / secretbox / 密钥派生）
 
-### 安装
+### 后端 (apps/api)
+- Fastify + TypeScript
+- PostgreSQL + Prisma
+- Redis（nonce、限流计数）
 
-1. 克隆仓库到本地机器
+### 共享包
+- `packages/crypto` - 加密工具库
+- `packages/shared-types` - 共享类型定义
+
+## 项目结构
+
+```
+askbox/
+├── apps/
+│   ├── web/          # Next.js 前端应用
+│   └── api/          # Fastify 后端 API
+├── packages/
+│   ├── crypto/       # 加密工具库 (libsodium)
+│   └── shared-types/ # 共享 TypeScript 类型
+├── docs/
+│   └── spec.md       # 技术规范文档
+└── docker-compose.yml
+```
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 20.0.0
+- pnpm >= 8.0.0
+- Docker & Docker Compose
+
+### 安装依赖
+
 ```bash
-git clone <repository-url>
+pnpm install
 ```
-2. 进入项目目录
+
+### 启动开发环境
+
 ```bash
-cd your-app-name
+# 启动 PostgreSQL 和 Redis
+docker compose up -d
+
+# 初始化数据库
+pnpm db:push
+
+# 启动开发服务器
+pnpm dev
 ```
-3. 安装项目依赖
+
+### 构建
+
 ```bash
-npm install
+pnpm build
 ```
-4. 创建一个`.env`文件，并根据你的环境配置必要的环境变量（数据库URI、邮件服务凭证等）
 
-5. 启动应用
+### 测试
+
 ```bash
-npm start
+pnpm test
 ```
 
-## 架构
+## 文档
 
-### `/src`
+- [技术规范](./docs/spec.md)
+- [API 文档](./docs/api.md)
+- [安全基线](./docs/security.md)
 
-包含所有源代码。
+## License
 
-#### `/api`
-
-API相关文件，组织方式支持API的版本控制。
-
-##### `/v1`
-
-- **`/controllers`**：处理API请求和响应。
-- **`/middlewares`**：应用中间件，例如身份验证和错误处理。
-- **`/models`**：定义数据模型和数据库架构。
-- **`/routes`**：定义API路由，连接路由和控制器。
-- **`/services`**：包含业务逻辑，例如发送邮件和用户验证。
-
-#### `/config`
-
-应用配置文件，如数据库连接配置。
-
-#### `/public`
-
-静态文件目录，如HTML和CSS文件。
-
-#### `/utils`
-
-实用程序和帮助函数，如日志记录器和错误处理器。
-
-### `/tests`
-
-包含测试代码和测试用例。
-
-## 环境变量
-
-示例`.env`文件：
-
-```env
-DB_URI=mongodb://localhost:27017/your-database
-MAIL_SERVICE_API_KEY=your-mail-service-api-key
-```
-
-## 贡献
-
-欢迎贡献！请阅读`CONTRIBUTING.md`了解如何为项目作出贡献。
-
-## 许可证
-
-本项目采用Affero General Public License v3 (AGPLv3)。这意味着如果你对软件进行了修改并且运行了修改后的版本，你必须以AGPLv3的形式公开修改后的源代码。
-
-有关详细信息，请参阅`LICENSE`文件。
+MIT

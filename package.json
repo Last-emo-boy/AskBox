@@ -1,19 +1,60 @@
 {
   "name": "askbox",
-  "version": "1.0.0",
-  "description": "An open-sourced version askbox",
-  "main": "index.js",
+  "version": "0.1.0",
+  "private": true,
+  "description": "匿名提问箱系统 - 支持端到端加密的隐私保护问答平台",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "e2e"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:fix": "eslint --fix \"**/*.{ts,tsx}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "test:e2e": "pnpm --filter @askbox/e2e test:e2e",
+    "test:e2e:ui": "pnpm --filter @askbox/e2e test:ui",
+    "clean": "turbo run clean",
+    "db:generate": "pnpm --filter @askbox/api db:generate",
+    "db:push": "pnpm --filter @askbox/api db:push",
+    "db:migrate": "pnpm --filter @askbox/api db:migrate",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "prepare": "husky"
   },
-  "author": "last-emo-boy",
-  "license": "AGPL-3.0-or-later",
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.2.3",
-    "nodemailer": "^6.9.13"
-  }
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
 }
