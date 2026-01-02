@@ -47,7 +47,6 @@ Desktop.ini
 .cache/
 
 # Documentation (private)
-docs/
 *.pdf
 
 # Development files
