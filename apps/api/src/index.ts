@@ -11,16 +11,23 @@ import { boxRoutes } from './routes/boxes.js';
 import { questionRoutes } from './routes/questions.js';
 import { createErrorHandler } from './utils/errorHandler.js';
 
+// Configure logger based on environment
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const app = Fastify({
-  logger: {
-    level: 'info',
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
+  logger: isDevelopment
+    ? {
+        level: 'info',
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+          },
+        },
+      }
+    : {
+        level: 'info',
       },
-    },
-  },
 });
 
 // Plugins
