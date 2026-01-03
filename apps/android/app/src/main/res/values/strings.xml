@@ -1,0 +1,107 @@
+<resources>
+    <string name="app_name">AskBox</string>
+    
+    <!-- Common -->
+    <string name="loading">加载中…</string>
+    <string name="error">错误</string>
+    <string name="retry">重试</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="copy">复制</string>
+    <string name="share">分享</string>
+    <string name="copied">已复制</string>
+    
+    <!-- Home -->
+    <string name="home_title">AskBox</string>
+    <string name="home_subtitle">端到端加密的匿名提问箱</string>
+    <string name="home_create_account">创建账户</string>
+    <string name="home_import_account">导入账户</string>
+    <string name="home_enter_dashboard">进入控制台</string>
+    
+    <!-- Account -->
+    <string name="create_account_title">创建新账户</string>
+    <string name="create_account_password_label">设置密码</string>
+    <string name="create_account_password_hint">至少 8 个字符</string>
+    <string name="create_account_password_confirm">确认密码</string>
+    <string name="create_account_use_password">使用密码保护种子（强烈推荐）</string>
+    <string name="create_account_no_password_warning">不使用密码保护时，任何能访问此设备的人都可能获取你的私钥。请确保设备安全。</string>
+    <string name="create_account_creating">创建中…</string>
+    <string name="create_account_error_password_short">密码至少需要 8 个字符</string>
+    <string name="create_account_error_password_mismatch">两次输入的密码不一致</string>
+    
+    <string name="import_account_title">导入账户</string>
+    <string name="import_account_seed_label">种子短语</string>
+    <string name="import_account_seed_hint">输入你的种子短语…</string>
+    
+    <string name="account_title">账户管理</string>
+    <string name="account_export_seed">导出种子</string>
+    <string name="account_delete">删除账户</string>
+    <string name="account_delete_confirm">确定要删除账户吗？此操作不可恢复。</string>
+    
+    <!-- Login -->
+    <string name="login_title">登录</string>
+    <string name="login_password_hint">输入密码</string>
+    <string name="login_button">登录</string>
+    <string name="login_error">登录失败</string>
+    
+    <!-- Boxes -->
+    <string name="boxes_title">我的提问箱</string>
+    <string name="boxes_subtitle">创建和管理你的提问箱</string>
+    <string name="boxes_create_new">创建新提问箱</string>
+    <string name="boxes_slug_hint">自定义链接（可选，如 my-box）</string>
+    <string name="boxes_create_button">创建</string>
+    <string name="boxes_creating">创建中…</string>
+    <string name="boxes_empty">还没有提问箱</string>
+    <string name="boxes_empty_hint">创建一个提问箱开始接收问题</string>
+    <string name="boxes_copy_link">复制链接</string>
+    <string name="boxes_view_questions">查看问题</string>
+    
+    <!-- Questions -->
+    <string name="questions_title">收到的问题</string>
+    <string name="questions_empty">还没有收到问题</string>
+    <string name="questions_empty_hint">分享你的提问箱链接给朋友</string>
+    <string name="questions_filter_all">全部</string>
+    <string name="questions_filter_unanswered">未回答</string>
+    <string name="questions_filter_answered">已回答</string>
+    <string name="questions_answer">回答</string>
+    <string name="questions_answered">已回答</string>
+    
+    <!-- Ask Question -->
+    <string name="ask_title">提问</string>
+    <string name="ask_to">向 %s 提问</string>
+    <string name="ask_question_hint">输入你的问题…</string>
+    <string name="ask_anonymous">匿名提问</string>
+    <string name="ask_submit">发送问题</string>
+    <string name="ask_submitting">发送中…</string>
+    <string name="ask_success_title">问题已发送</string>
+    <string name="ask_success_message">你的问题已加密发送给箱主</string>
+    <string name="ask_save_receipt">保存回执</string>
+    <string name="ask_receipt_saved">回执已保存，可用于查看私密回答</string>
+    
+    <!-- Answer -->
+    <string name="answer_title">回答问题</string>
+    <string name="answer_hint">输入你的回答…</string>
+    <string name="answer_visibility_public">公开回答</string>
+    <string name="answer_visibility_private">私密回答</string>
+    <string name="answer_submit">发送回答</string>
+    <string name="answer_submitting">发送中…</string>
+    
+    <!-- Receipts -->
+    <string name="receipts_title">我的回执</string>
+    <string name="receipts_empty">还没有回执</string>
+    <string name="receipts_empty_hint">提问时选择保存回执可在此查看</string>
+    <string name="receipts_check_answer">查看回答</string>
+    <string name="receipts_no_answer">暂无回答</string>
+    <string name="receipts_private_answer">私密回答</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本</string>
+</resources>

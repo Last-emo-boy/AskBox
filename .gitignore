@@ -56,3 +56,25 @@ Desktop.ini
 
 # Development files
 readthis.md
+
+# Android
+apps/android/.gradle/
+apps/android/.idea/
+apps/android/build/
+apps/android/app/build/
+apps/android/local.properties
+apps/android/*.iml
+apps/android/app/*.iml
+apps/android/captures/
+apps/android/.externalNativeBuild/
+apps/android/.cxx/
+*.apk
+*.aab
+*.jks
+*.keystore
+!*.keystore.example
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar

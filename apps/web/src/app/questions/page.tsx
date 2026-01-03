@@ -284,7 +284,8 @@ function QuestionsContent() {
         answerData.nonce &&
         answerData.dek_for_owner
       ) {
-        const aad = `${answerData.answer_id}|${question.question_id}|v1`;
+        // AAD uses question_id only (must match encryption)
+        const aad = `${question.question_id}|v1`;
 
         const plaintext = envelopeDecrypt(
           fromBase64Url(answerData.ciphertext_answer),
@@ -386,7 +387,8 @@ function QuestionsContent() {
 
         const ownerPubKey = accountKeys.encKeyPair.publicKey;
         const askerPubKey = fromBase64Url(answeringQuestion.receipt_pub_enc_key);
-        const aad = `pending|${answeringQuestion.question_id}|v1`; // answer_id pending
+        // AAD uses question_id only (answer_id doesn't exist at encryption time)
+        const aad = `${answeringQuestion.question_id}|v1`;
 
         const encrypted = envelopeEncrypt(stringToBytes(answerText), aad, ownerPubKey, askerPubKey);
 

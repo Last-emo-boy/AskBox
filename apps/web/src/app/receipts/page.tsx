@@ -62,7 +62,8 @@ export default function ReceiptsPage() {
         answer.dek_for_asker
       ) {
         const receiptKeys = deriveReceiptKeys(fromBase64Url(receipt.receipt_seed));
-        const aad = `${answer.answer_id}|${receipt.question_id}|v1`;
+        // AAD uses question_id only (must match encryption)
+        const aad = `${receipt.question_id}|v1`;
 
         const plaintext = envelopeDecrypt(
           fromBase64Url(answer.ciphertext_answer),
