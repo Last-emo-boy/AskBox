@@ -40,28 +40,39 @@ FROM node:20-alpine AS runner
 # Install OpenSSL for Prisma, and wget for healthcheck
 RUN apk add --no-cache openssl openssl-dev libc6-compat wget
 
+# Use npm in production (simpler than pnpm for deployment)
 WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Copy package files
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
+COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+
 # Copy built files
 COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
-COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
 COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
-COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
-# Copy entire node_modules from builder (pnpm uses symlinks in .pnpm directory)
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/packages/crypto/node_modules ./packages/crypto/node_modules
+# Install production dependencies using npm (flattened node_modules, no symlink issues)
+# Configure npm to use China mirror
+RUN npm config set registry https://registry.npmmirror.com
 
+# Install dependencies for crypto package (libsodium)
+WORKDIR /app/packages/crypto
+RUN npm install --omit=dev --ignore-scripts
+
+# Install dependencies for api package
 WORKDIR /app/apps/api
+RUN npm install --omit=dev --ignore-scripts
+
+# Generate Prisma client for this environment
+RUN npx prisma generate
 
 EXPOSE 3030
 
 # Run database migrations and start
-# Use node to run prisma directly to avoid npx downloading wrong version
-CMD ["sh", "-c", "node ../../node_modules/prisma/build/index.js db push --skip-generate && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
