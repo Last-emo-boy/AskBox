@@ -39,7 +39,7 @@ RUN pnpm --filter @askbox/api deploy --prod /app/deploy
 
 # Copy Prisma schema and generated client to deploy directory
 RUN cp -r /app/apps/api/prisma /app/deploy/
-RUN cp -r /app/apps/api/node_modules/.prisma /app/deploy/node_modules/
+RUN cp -r /app/node_modules/.prisma /app/deploy/node_modules/
 
 # Copy Prisma CLI and engines from builder (to avoid npx downloading wrong version)
 RUN mkdir -p /app/deploy/node_modules/prisma /app/deploy/node_modules/@prisma/engines
