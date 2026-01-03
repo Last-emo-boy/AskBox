@@ -39,7 +39,13 @@ RUN pnpm --filter @askbox/api deploy --prod /app/deploy
 
 # Copy Prisma schema and generated client to deploy directory
 RUN cp -r /app/apps/api/prisma /app/deploy/
-RUN cp -r /app/node_modules/.prisma /app/deploy/node_modules/
+
+# Debug: Find where .prisma is located
+RUN find /app -name ".prisma" -type d 2>/dev/null || echo "No .prisma directory found"
+RUN find /app -name "libquery_engine*" -type f 2>/dev/null | head -5 || echo "No query engine found"
+
+# Copy .prisma from wherever it is (pnpm stores it in .pnpm)
+RUN cp -r $(find /app -path "*/.prisma/client" -type d | head -1)/.. /app/deploy/node_modules/.prisma || echo "Trying alternative location"
 
 # Copy Prisma CLI and engines from builder (to avoid npx downloading wrong version)
 RUN mkdir -p /app/deploy/node_modules/prisma /app/deploy/node_modules/@prisma/engines
