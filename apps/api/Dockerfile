@@ -1,6 +1,9 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Install OpenSSL so Prisma can detect the correct version during generation
+RUN apk add --no-cache openssl openssl-dev libc6-compat
+
 RUN corepack enable && corepack prepare pnpm@8 --activate
 
 # Configure pnpm with China mirror and retry settings
