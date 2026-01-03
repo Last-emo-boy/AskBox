@@ -134,11 +134,12 @@ delete() {
     echo -e "${RED}Stopping and removing containers...${NC}"
     docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down -v --rmi local 2>/dev/null || true
     
-    echo -e "${RED}Removing images...${NC}"
+    echo -e "${RED}Removing AskBox images...${NC}"
     docker images | grep -E "askbox" | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
     
-    echo -e "${RED}Pruning unused volumes...${NC}"
-    docker volume prune -f 2>/dev/null || true
+    echo -e "${RED}Removing AskBox volumes...${NC}"
+    # Only remove volumes that start with the project name (askbox)
+    docker volume ls -q | grep -E "^askbox" | xargs -r docker volume rm 2>/dev/null || true
     
     echo -e "${GREEN}All AskBox data has been deleted.${NC}"
     echo -e "${YELLOW}Run './deploy.sh start' to deploy fresh.${NC}"
