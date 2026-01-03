@@ -13,10 +13,38 @@ import {
   bytesToString,
   stringToBytes,
 } from '@askbox/crypto';
-import Link from 'next/link';
+import {
+  CheckCircle2,
+  Eye,
+  Filter,
+  Globe,
+  Inbox,
+  Loader2,
+  Lock,
+  LockOpen,
+  MessageSquare,
+  Send,
+  X,
+} from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+import { Header } from '@/components/Header';
+import { QuestionSkeleton } from '@/components/Skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
 import { getStoredAccount } from '@/lib/storage';
 
@@ -39,10 +67,8 @@ interface Question {
   created_at: string;
   opened_at: string | null;
   has_answer: boolean;
-  // Decrypted locally
   plaintext?: string;
   decryptError?: string;
-  // Answer info
   answer?: Answer;
   answerLoading?: boolean;
 }
@@ -51,9 +77,16 @@ export default function QuestionsPage() {
   return (
     <Suspense
       fallback={
-        <main className="container mx-auto max-w-4xl px-4 py-8">
-          <div className="text-center">加载中...</div>
-        </main>
+        <>
+          <Header />
+          <main className="bg-background min-h-screen">
+            <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
+              <QuestionSkeleton />
+              <QuestionSkeleton />
+              <QuestionSkeleton />
+            </div>
+          </main>
+        </>
       }
     >
       <QuestionsContent />
@@ -112,7 +145,6 @@ function QuestionsContent() {
     try {
       await initCrypto();
 
-      // Get seed
       let seed: Uint8Array;
       if (account.plaintext_seed) {
         seed = fromBase64Url(account.plaintext_seed);
@@ -129,13 +161,8 @@ function QuestionsContent() {
       const keys = deriveAccountKeys(seed);
       setAccountKeys(keys);
 
-      // Request challenge
       const challenge = await api.requestChallenge(toBase64Url(keys.signKeyPair.publicKey));
-
-      // Sign challenge
       const signature = signChallenge(fromBase64Url(challenge.nonce), keys.signKeyPair.privateKey);
-
-      // Verify
       const auth = await api.verifyChallenge(challenge.challenge_id, toBase64Url(signature));
       api.setAccessToken(auth.access_token);
 
@@ -374,289 +401,376 @@ function QuestionsContent() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="border-primary-600 h-12 w-12 animate-spin rounded-full border-b-2"></div>
-      </div>
+      <>
+        <Header />
+        <main className="bg-background min-h-screen">
+          <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
+            <QuestionSkeleton />
+            <QuestionSkeleton />
+            <QuestionSkeleton />
+          </div>
+        </main>
+      </>
     );
   }
 
+  const filterLabels = {
+    all: '全部',
+    unopened: '未拆开',
+    opened: '已拆开',
+    answered: '已回答',
+  };
+
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-4xl">
-        <header className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">收到的问题</h1>
-          <Link href="/dashboard" className="btn-secondary">
-            返回控制台
-          </Link>
-        </header>
+    <>
+      <Header />
+      <main className="bg-background min-h-screen">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
+          <header className="mb-6 sm:mb-8">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">收到的问题</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">查看和回复匿名提问</p>
+          </header>
 
-        {needPassword && account?.encrypted_seed && (
-          <div className="card mb-6">
-            <h2 className="mb-4 text-lg font-semibold">请输入密码以继续</h2>
-            <div className="flex gap-3">
-              <input
-                type="password"
-                className="input flex-1"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="输入密码"
-              />
-              <button onClick={handleLogin} className="btn-primary">
-                登录
-              </button>
-            </div>
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-          </div>
-        )}
-
-        {!needPassword && (
-          <>
-            {/* Filter */}
-            <div className="mb-6 flex gap-2">
-              {(['all', 'unopened', 'opened', 'answered'] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-2 text-sm ${
-                    filter === f
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {f === 'all' && '全部'}
-                  {f === 'unopened' && '未拆开'}
-                  {f === 'opened' && '已拆开'}
-                  {f === 'answered' && '已回答'}
-                </button>
-              ))}
-            </div>
-
-            {/* Questions list */}
-            <div className="space-y-4">
-              {questions.length === 0 ? (
-                <div className="card py-12 text-center text-gray-500">
-                  <p>暂无问题</p>
+          {needPassword && account?.encrypted_seed && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">请输入密码以继续</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    type="password"
+                    className="flex-1"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="输入密码"
+                  />
+                  <Button onClick={handleLogin} className="w-full sm:w-auto">
+                    登录
+                  </Button>
                 </div>
-              ) : (
-                questions.map((question) => (
-                  <div key={question.question_id} className="card">
-                    <div className="mb-3 flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {!question.opened_at && (
-                          <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
-                            未拆开
-                          </span>
-                        )}
-                        {question.has_answer && (
-                          <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">
-                            已回答
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {new Date(question.created_at).toLocaleString()}
-                      </span>
-                    </div>
+                {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
+              </CardContent>
+            </Card>
+          )}
 
-                    {question.plaintext ? (
-                      <div className="mb-3 rounded-lg bg-gray-50 p-4">
-                        <p className="whitespace-pre-wrap">{question.plaintext}</p>
-                      </div>
-                    ) : question.decryptError ? (
-                      <div className="mb-3 rounded-lg bg-red-50 p-4 text-red-600">
-                        {question.decryptError}
-                      </div>
-                    ) : (
-                      <div className="mb-3">
-                        <button
-                          onClick={() => decryptQuestion(question)}
-                          className="btn-primary text-sm"
-                        >
-                          🔓 拆开查看
-                        </button>
-                      </div>
-                    )}
+          {!needPassword && (
+            <>
+              {/* Filter */}
+              <div className="mb-6 flex items-center gap-2">
+                <Filter className="text-muted-foreground h-4 w-4" />
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(filterLabels) as (keyof typeof filterLabels)[]).map((f) => (
+                    <Button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      variant={filter === f ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      {filterLabels[f]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
-                    {question.plaintext && !question.has_answer && (
-                      <button
-                        onClick={() => setAnsweringQuestion(question)}
-                        className="btn-secondary text-sm"
-                      >
-                        回答问题
-                      </button>
-                    )}
-
-                    {/* Show answer section for answered questions */}
-                    {question.plaintext && question.has_answer && (
-                      <div className="mt-3 border-t pt-3">
-                        {question.answerLoading ? (
-                          <div className="flex items-center gap-2 text-gray-500">
-                            <div className="border-primary-600 h-4 w-4 animate-spin rounded-full border-b-2"></div>
-                            <span>加载回答中...</span>
+              {/* Questions list */}
+              <div className="space-y-4">
+                {questions.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Inbox className="text-muted-foreground mb-4 h-12 w-12" />
+                      <p className="text-muted-foreground">暂无问题</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  questions.map((question) => (
+                    <Card key={question.question_id}>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {!question.opened_at && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                              >
+                                <Lock className="mr-1 h-3 w-3" />
+                                未拆开
+                              </Badge>
+                            )}
+                            {question.has_answer && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              >
+                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                已回答
+                              </Badge>
+                            )}
                           </div>
-                        ) : question.answer ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-500">我的回答：</span>
-                              {question.answer.public_text ? (
-                                <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
-                                  已公开
-                                </span>
-                              ) : (
-                                <span className="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
-                                  私密
-                                </span>
-                              )}
-                            </div>
-                            <div className="rounded-lg bg-blue-50 p-3">
-                              <p className="whitespace-pre-wrap text-sm">
-                                {question.answer.public_text || question.answer.decrypted_text}
-                              </p>
-                            </div>
-                            {/* One-click publish button for private answers */}
-                            {question.answer.visibility === 'private' &&
-                              !question.answer.public_text && (
-                                <button
-                                  onClick={() => setPublishingQuestion(question)}
-                                  className="btn-primary text-sm"
-                                >
-                                  🌐 一键公开
-                                </button>
-                              )}
+                          <span className="text-muted-foreground text-xs sm:text-sm">
+                            {new Date(question.created_at).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {question.plaintext ? (
+                          <div className="bg-muted mb-4 rounded-lg p-4">
+                            <p className="whitespace-pre-wrap text-sm sm:text-base">
+                              {question.plaintext}
+                            </p>
+                          </div>
+                        ) : question.decryptError ? (
+                          <div className="bg-destructive/10 text-destructive mb-4 rounded-lg p-4">
+                            {question.decryptError}
                           </div>
                         ) : (
-                          <button
-                            onClick={() => loadAnswer(question)}
-                            className="btn-secondary text-sm"
-                          >
-                            查看回答
-                          </button>
+                          <div className="mb-4">
+                            <Button
+                              onClick={() => decryptQuestion(question)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <LockOpen className="mr-1.5 h-4 w-4" />
+                              拆开查看
+                            </Button>
+                          </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </>
-        )}
 
-        {/* Answer modal */}
-        {answeringQuestion && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="card max-h-[80vh] w-full max-w-lg overflow-y-auto">
-              <h2 className="mb-4 text-xl font-semibold">回答问题</h2>
+                        {question.plaintext && !question.has_answer && (
+                          <Button onClick={() => setAnsweringQuestion(question)} size="sm">
+                            <MessageSquare className="mr-1.5 h-4 w-4" />
+                            回答问题
+                          </Button>
+                        )}
 
-              <div className="mb-4 rounded-lg bg-gray-50 p-4">
-                <p className="mb-1 text-sm text-gray-500">问题：</p>
-                <p>{answeringQuestion.plaintext}</p>
+                        {/* Show answer section for answered questions */}
+                        {question.plaintext && question.has_answer && (
+                          <div className="dark:border-border mt-4 border-t pt-4">
+                            {question.answerLoading ? (
+                              <div className="text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>加载回答中...</span>
+                              </div>
+                            ) : question.answer ? (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground text-sm">我的回答：</span>
+                                  {question.answer.public_text ? (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                    >
+                                      <Globe className="mr-1 h-3 w-3" />
+                                      已公开
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                    >
+                                      <Lock className="mr-1 h-3 w-3" />
+                                      私密
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-3">
+                                  <p className="whitespace-pre-wrap text-sm">
+                                    {question.answer.public_text || question.answer.decrypted_text}
+                                  </p>
+                                </div>
+                                {question.answer.visibility === 'private' &&
+                                  !question.answer.public_text && (
+                                    <Button
+                                      onClick={() => setPublishingQuestion(question)}
+                                      size="sm"
+                                    >
+                                      <Globe className="mr-1.5 h-4 w-4" />
+                                      一键公开
+                                    </Button>
+                                  )}
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => loadAnswer(question)}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <Eye className="mr-1.5 h-4 w-4" />
+                                查看回答
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
+            </>
+          )}
+
+          {/* Answer Dialog */}
+          <Dialog
+            open={!!answeringQuestion}
+            onOpenChange={(open) => !open && setAnsweringQuestion(null)}
+          >
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>回答问题</DialogTitle>
+                <DialogDescription>选择回答方式并输入你的回答</DialogDescription>
+              </DialogHeader>
 
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      checked={answerVisibility === 'public'}
-                      onChange={() => setAnswerVisibility('public')}
-                    />
-                    公开回答
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      checked={answerVisibility === 'private'}
-                      onChange={() => setAnswerVisibility('private')}
-                      disabled={!answeringQuestion.receipt_pub_enc_key}
-                    />
-                    私密回答
-                    {!answeringQuestion.receipt_pub_enc_key && (
-                      <span className="text-xs text-gray-500">（此问题不支持）</span>
-                    )}
-                  </label>
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="text-muted-foreground mb-1 text-xs">问题：</p>
+                  <p className="text-sm">{answeringQuestion?.plaintext}</p>
                 </div>
 
-                <textarea
-                  className="input min-h-[150px] resize-none"
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder="输入你的回答..."
-                />
-
-                {error && <p className="text-sm text-red-600">{error}</p>}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleSubmitAnswer}
-                    disabled={isSubmittingAnswer || !answerText.trim()}
-                    className="btn-primary flex-1"
-                  >
-                    {isSubmittingAnswer ? '提交中...' : '提交回答'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAnsweringQuestion(null);
-                      setAnswerText('');
-                      setError('');
-                    }}
-                    className="btn-secondary"
-                  >
-                    取消
-                  </button>
+                <div className="space-y-2">
+                  <Label>回答方式</Label>
+                  <div className="flex gap-4">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        checked={answerVisibility === 'public'}
+                        onChange={() => setAnswerVisibility('public')}
+                        className="text-primary"
+                      />
+                      <Globe className="h-4 w-4" />
+                      公开回答
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        checked={answerVisibility === 'private'}
+                        onChange={() => setAnswerVisibility('private')}
+                        disabled={!answeringQuestion?.receipt_pub_enc_key}
+                        className="text-primary"
+                      />
+                      <Lock className="h-4 w-4" />
+                      私密回答
+                      {!answeringQuestion?.receipt_pub_enc_key && (
+                        <span className="text-muted-foreground text-xs">（不支持）</span>
+                      )}
+                    </label>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Publish confirmation modal */}
-        {publishingQuestion && publishingQuestion.answer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="card w-full max-w-lg">
-              <h2 className="mb-4 text-xl font-semibold">确认公开回答</h2>
+                <div className="space-y-2">
+                  <Label htmlFor="answerText">回答内容</Label>
+                  <Textarea
+                    id="answerText"
+                    className="min-h-[150px] resize-none"
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    placeholder="输入你的回答..."
+                  />
+                </div>
 
-              <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ 公开后，任何人都可以看到这个回答。此操作不可撤销。
-                </p>
+                {error && <p className="text-destructive text-sm">{error}</p>}
               </div>
 
-              <div className="mb-4 rounded-lg bg-gray-50 p-4">
-                <p className="mb-1 text-sm text-gray-500">问题：</p>
-                <p className="mb-3 text-sm">{publishingQuestion.plaintext}</p>
-                <p className="mb-1 text-sm text-gray-500">回答（将被公开）：</p>
-                <p className="whitespace-pre-wrap text-sm">
-                  {publishingQuestion.answer.decrypted_text ||
-                    publishingQuestion.answer.public_text}
-                </p>
-              </div>
-
-              {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePublish}
-                  disabled={isPublishing}
-                  className="btn-primary flex-1"
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAnsweringQuestion(null);
+                    setAnswerText('');
+                    setError('');
+                  }}
+                  className="w-full sm:w-auto"
                 >
-                  {isPublishing ? '公开中...' : '确认公开'}
-                </button>
-                <button
+                  <X className="mr-1.5 h-4 w-4" />
+                  取消
+                </Button>
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={isSubmittingAnswer || !answerText.trim()}
+                  className="w-full sm:w-auto"
+                >
+                  {isSubmittingAnswer ? (
+                    <>
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      提交中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-1.5 h-4 w-4" />
+                      提交回答
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Publish Confirmation Dialog */}
+          <Dialog
+            open={!!publishingQuestion}
+            onOpenChange={(open) => !open && setPublishingQuestion(null)}
+          >
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>确认公开回答</DialogTitle>
+                <DialogDescription>
+                  公开后，任何人都可以看到这个回答。此操作不可撤销。
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    ⚠️ 公开后，任何人都可以看到这个回答。此操作不可撤销。
+                  </p>
+                </div>
+
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="text-muted-foreground mb-1 text-xs">问题：</p>
+                  <p className="mb-3 text-sm">{publishingQuestion?.plaintext}</p>
+                  <p className="text-muted-foreground mb-1 text-xs">回答（将被公开）：</p>
+                  <p className="whitespace-pre-wrap text-sm">
+                    {publishingQuestion?.answer?.decrypted_text ||
+                      publishingQuestion?.answer?.public_text}
+                  </p>
+                </div>
+
+                {error && <p className="text-destructive text-sm">{error}</p>}
+              </div>
+
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setPublishingQuestion(null);
                     setError('');
                   }}
-                  className="btn-secondary"
+                  className="w-full sm:w-auto"
                 >
                   取消
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
+                </Button>
+                <Button
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className="w-full sm:w-auto"
+                >
+                  {isPublishing ? (
+                    <>
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      公开中...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="mr-1.5 h-4 w-4" />
+                      确认公开
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </main>
+    </>
   );
 }

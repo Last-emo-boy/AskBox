@@ -7,12 +7,16 @@ import {
   fromBase64Url,
   bytesToString,
 } from '@askbox/crypto';
-import Link from 'next/link';
+import { ChevronDown, Globe, Inbox, Loader2, Lock, Search, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { Header } from '@/components/Header';
+import { CardSkeleton } from '@/components/Skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { getAllReceipts, deleteReceipt } from '@/lib/storage';
-
 
 import type { StoredReceipt } from '@askbox/shared-types';
 
@@ -33,31 +37,30 @@ export default function ReceiptsPage() {
   useEffect(() => {
     const loadReceipts = async () => {
       const stored = await getAllReceipts();
-      setReceipts(stored.map(r => ({ ...r, isLoading: false })));
+      setReceipts(stored.map((r) => ({ ...r, isLoading: false })));
       setIsLoading(false);
     };
     loadReceipts();
   }, []);
 
   const checkAnswer = async (receipt: ReceiptWithAnswer) => {
-    setReceipts(prev =>
-      prev.map(r =>
-        r.question_id === receipt.question_id ? { ...r, isLoading: true } : r
-      )
+    setReceipts((prev) =>
+      prev.map((r) => (r.question_id === receipt.question_id ? { ...r, isLoading: true } : r))
     );
 
     try {
       await initCrypto();
 
-      const answer = await api.getAnswerForAsker(
-        receipt.question_id,
-        receipt.asker_token
-      );
+      const answer = await api.getAnswerForAsker(receipt.question_id, receipt.asker_token);
 
       let decryptedText: string | undefined;
 
-      if (answer.visibility === 'private' && answer.ciphertext_answer && answer.nonce && answer.dek_for_asker) {
-        // Decrypt the answer
+      if (
+        answer.visibility === 'private' &&
+        answer.ciphertext_answer &&
+        answer.nonce &&
+        answer.dek_for_asker
+      ) {
         const receiptKeys = deriveReceiptKeys(fromBase64Url(receipt.receipt_seed));
         const aad = `${answer.answer_id}|${receipt.question_id}|v1`;
 
@@ -72,8 +75,8 @@ export default function ReceiptsPage() {
         decryptedText = bytesToString(plaintext);
       }
 
-      setReceipts(prev =>
-        prev.map(r =>
+      setReceipts((prev) =>
+        prev.map((r) =>
           r.question_id === receipt.question_id
             ? {
                 ...r,
@@ -88,8 +91,8 @@ export default function ReceiptsPage() {
         )
       );
     } catch (err) {
-      setReceipts(prev =>
-        prev.map(r =>
+      setReceipts((prev) =>
+        prev.map((r) =>
           r.question_id === receipt.question_id
             ? {
                 ...r,
@@ -106,97 +109,156 @@ export default function ReceiptsPage() {
   };
 
   const handleDelete = async (questionId: string) => {
-    if (!confirm('确定要删除这个回执吗？删除后将无法查看回答。')) {return;}
+    if (!confirm('确定要删除这个回执吗？删除后将无法查看回答。')) {
+      return;
+    }
     await deleteReceipt(questionId);
-    setReceipts(prev => prev.filter(r => r.question_id !== questionId));
+    setReceipts((prev) => prev.filter((r) => r.question_id !== questionId));
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <>
+        <Header />
+        <main className="bg-background min-h-screen">
+          <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
+            <CardSkeleton />
+            <div className="mt-4">
+              <CardSkeleton />
+            </div>
+            <div className="mt-4">
+              <CardSkeleton />
+            </div>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">我的回执</h1>
-          <Link href="/dashboard" className="btn-secondary">
-            返回控制台
-          </Link>
-        </header>
+    <>
+      <Header />
+      <main className="bg-background min-h-screen">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
+          <header className="mb-6 sm:mb-8">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">我的回执</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+              查看你发送的提问和收到的回复
+            </p>
+          </header>
 
-        {receipts.length === 0 ? (
-          <div className="card text-center text-gray-500 py-12">
-            <p className="mb-4">还没有提问回执</p>
-            <p className="text-sm">向他人的提问箱提问后，回执会保存在这里</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {receipts.map((receipt) => (
-              <div key={receipt.question_id} className="card">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold">
-                      提问给: {receipt.box_slug}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {new Date(receipt.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(receipt.question_id)}
-                    className="text-red-600 hover:text-red-700 text-sm"
-                  >
-                    删除
-                  </button>
-                </div>
-
-                {receipt.answer ? (
-                  <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-                    {receipt.answer.error ? (
-                      <p className="text-red-600 text-sm">{receipt.answer.error}</p>
-                    ) : receipt.answer.public_text ? (
+          {receipts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Inbox className="text-muted-foreground mb-4 h-12 w-12" />
+                <p className="text-muted-foreground mb-2">还没有提问回执</p>
+                <p className="text-muted-foreground text-center text-sm">
+                  向他人的提问箱提问后，回执会保存在这里
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {receipts.map((receipt) => (
+                <Card key={receipt.question_id}>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">公开回答：</p>
-                        <p className="whitespace-pre-wrap">{receipt.answer.public_text}</p>
+                        <h3 className="font-semibold">提问给: {receipt.box_slug}</h3>
+                        <p className="text-muted-foreground text-sm">
+                          {new Date(receipt.created_at).toLocaleString()}
+                        </p>
                       </div>
-                    ) : receipt.answer.decrypted_text ? (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">🔒 私密回答：</p>
-                        <p className="whitespace-pre-wrap">{receipt.answer.decrypted_text}</p>
+                      <Button
+                        onClick={() => handleDelete(receipt.question_id)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="mr-1.5 h-4 w-4" />
+                        <span className="hidden sm:inline">删除</span>
+                      </Button>
+                    </div>
+
+                    {receipt.answer ? (
+                      <div className="bg-muted mt-3 rounded-lg p-4">
+                        {receipt.answer.error ? (
+                          <p className="text-destructive text-sm">{receipt.answer.error}</p>
+                        ) : receipt.answer.public_text ? (
+                          <div>
+                            <div className="mb-2 flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              >
+                                <Globe className="mr-1 h-3 w-3" />
+                                公开回答
+                              </Badge>
+                            </div>
+                            <p className="whitespace-pre-wrap text-sm">
+                              {receipt.answer.public_text}
+                            </p>
+                          </div>
+                        ) : receipt.answer.decrypted_text ? (
+                          <div>
+                            <div className="mb-2 flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                              >
+                                <Lock className="mr-1 h-3 w-3" />
+                                私密回答
+                              </Badge>
+                            </div>
+                            <p className="whitespace-pre-wrap text-sm">
+                              {receipt.answer.decrypted_text}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">暂无回答</p>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm">暂无回答</p>
+                      <Button
+                        onClick={() => checkAnswer(receipt)}
+                        disabled={receipt.isLoading}
+                        size="sm"
+                      >
+                        {receipt.isLoading ? (
+                          <>
+                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            查询中...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-1.5 h-4 w-4" />
+                            查看回答
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => checkAnswer(receipt)}
-                    disabled={receipt.isLoading}
-                    className="btn-primary text-sm"
-                  >
-                    {receipt.isLoading ? '查询中...' : '查看回答'}
-                  </button>
-                )}
 
-                <details className="mt-3">
-                  <summary className="text-sm text-gray-500 cursor-pointer">
-                    显示回执详情
-                  </summary>
-                  <div className="mt-2 p-3 bg-gray-50 rounded text-xs font-mono break-all">
-                    <p><strong>问题ID:</strong> {receipt.question_id}</p>
-                    <p><strong>回执种子:</strong> {receipt.receipt_seed}</p>
-                  </div>
-                </details>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
+                    <details className="mt-3">
+                      <summary className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 text-sm">
+                        <ChevronDown className="h-4 w-4" />
+                        显示回执详情
+                      </summary>
+                      <div className="bg-muted mt-2 rounded-lg p-3 font-mono text-xs">
+                        <p className="break-all">
+                          <strong>问题ID:</strong> {receipt.question_id}
+                        </p>
+                        <p className="mt-1 break-all">
+                          <strong>回执种子:</strong> {receipt.receipt_seed}
+                        </p>
+                      </div>
+                    </details>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 }

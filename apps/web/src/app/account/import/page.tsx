@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -89,11 +90,16 @@ export default function ImportAccountPage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-md px-6 py-16">
+    <main className="bg-background min-h-screen">
+      {/* Theme Toggle */}
+      <div className="fixed right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="mx-auto max-w-md px-4 py-8 sm:px-6 sm:py-16">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+          className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center text-sm transition-colors sm:mb-8"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           返回首页
@@ -101,15 +107,15 @@ export default function ImportAccountPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">导入账户</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">导入账户</CardTitle>
             <CardDescription>使用已有的种子恢复账户</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-5 sm:space-y-6">
             <div className="space-y-2">
               <Label htmlFor="seed">输入种子</Label>
               <Textarea
                 id="seed"
-                className="font-mono text-sm"
+                className="min-h-[80px] font-mono text-xs sm:text-sm"
                 value={seedInput}
                 onChange={(e) => setSeedInput(e.target.value)}
                 placeholder="粘贴你的种子（base64url 格式）"
@@ -122,9 +128,9 @@ export default function ImportAccountPage() {
                 id="usePassword"
                 checked={usePassword}
                 onChange={(e) => setUsePassword(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                className="border-border text-primary focus:ring-primary h-4 w-4 rounded"
               />
-              <Label htmlFor="usePassword" className="text-sm font-normal text-zinc-600">
+              <Label htmlFor="usePassword" className="text-muted-foreground text-sm font-normal">
                 使用密码保护种子（强烈推荐）
               </Label>
             </div>
@@ -156,7 +162,7 @@ export default function ImportAccountPage() {
             )}
 
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4 text-sm">
                 {error}
               </div>
             )}
@@ -175,11 +181,11 @@ export default function ImportAccountPage() {
               )}
             </Button>
 
-            <p className="text-center text-sm text-zinc-500">
+            <p className="text-muted-foreground text-center text-sm">
               还没有账户？
               <Link
                 href="/account/create"
-                className="ml-1 text-zinc-900 underline-offset-4 hover:underline"
+                className="text-foreground ml-1 underline-offset-4 hover:underline"
               >
                 创建新账户
               </Link>
