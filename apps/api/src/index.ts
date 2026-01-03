@@ -8,6 +8,7 @@ import { config } from './config.js';
 import { answerRoutes } from './routes/answers.js';
 import { authRoutes } from './routes/auth.js';
 import { boxRoutes } from './routes/boxes.js';
+import { pushRoutes } from './routes/push.js';
 import { questionRoutes } from './routes/questions.js';
 import { createErrorHandler } from './utils/errorHandler.js';
 
@@ -58,6 +59,7 @@ await app.register(authRoutes, { prefix: '/v1/auth' });
 await app.register(boxRoutes, { prefix: '/v1' });
 await app.register(questionRoutes, { prefix: '/v1' });
 await app.register(answerRoutes, { prefix: '/v1' });
+await app.register(pushRoutes, { prefix: '/v1/push' });
 
 // Health check
 app.get('/health', async () => {

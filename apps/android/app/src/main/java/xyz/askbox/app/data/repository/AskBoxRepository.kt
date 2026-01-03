@@ -12,13 +12,20 @@ import xyz.askbox.app.util.DebugLogger
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Interface for AuthRepository - used by FCM service
+ */
+interface AuthRepository {
+    suspend fun registerFcmToken(token: String)
+}
+
 @Singleton
 class AskBoxRepository @Inject constructor(
     private val api: AskBoxApi,
     private val crypto: CryptoManager,
     private val accountStorage: AccountStorage,
     private val receiptStorage: ReceiptStorage
-) {
+) : AuthRepository {
     private var accessToken: String? = null
     private var currentKeys: AccountKeys? = null
 
@@ -449,6 +456,26 @@ class AskBoxRepository @Inject constructor(
 
     suspend fun deleteReceipt(questionId: String) {
         receiptStorage.deleteReceipt(questionId)
+    }
+
+    // ========================================
+    // Push Notifications
+    // ========================================
+
+    override suspend fun registerFcmToken(fcmToken: String) {
+        val token = ensureLoggedIn()
+        api.subscribeFcm(
+            authHeader(token),
+            FcmSubscribeRequest(fcmToken = fcmToken)
+        )
+    }
+
+    suspend fun unregisterFcmToken(fcmToken: String) {
+        val token = ensureLoggedIn()
+        api.unsubscribePush(
+            authHeader(token),
+            UnsubscribeRequest(endpoint = fcmToken)
+        )
     }
 }
 

@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import xyz.askbox.app.R
 import xyz.askbox.app.data.remote.BoxItem
 import xyz.askbox.app.data.repository.AskBoxRepository
+import xyz.askbox.app.ui.components.ShareDialog
 import javax.inject.Inject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,9 +39,18 @@ fun BoxesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var shareBoxSlug by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadBoxes()
+    }
+    
+    // Share dialog
+    if (shareBoxSlug != null) {
+        ShareDialog(
+            slug = shareBoxSlug!!,
+            onDismiss = { shareBoxSlug = null }
+        )
     }
 
     Scaffold(
@@ -182,6 +192,7 @@ fun BoxesScreen(
                         items(uiState.boxes) { box ->
                             BoxListItem(
                                 box = box,
+                                onShare = { shareBoxSlug = box.slug },
                                 onCopyLink = {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     val clip = ClipData.newPlainText("Box Link", "https://askbox.w33d.xyz/box/${box.slug}")
@@ -201,6 +212,7 @@ fun BoxesScreen(
 @Composable
 private fun BoxListItem(
     box: BoxItem,
+    onShare: () -> Unit,
     onCopyLink: () -> Unit,
     onViewQuestions: () -> Unit
 ) {
@@ -228,6 +240,14 @@ private fun BoxListItem(
                         text = "askbox.w33d.xyz/box/${box.slug}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                // Share button in header
+                IconButton(onClick = onShare) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "分享",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

@@ -1,9 +1,11 @@
 package xyz.askbox.app.di
 
+import android.content.Context
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,6 +14,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import xyz.askbox.app.BuildConfig
 import xyz.askbox.app.data.remote.AskBoxApi
+import xyz.askbox.app.data.repository.AuthRepository
+import xyz.askbox.app.push.PushNotificationManager
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -58,5 +62,14 @@ object NetworkModule {
     @Singleton
     fun provideAskBoxApi(retrofit: Retrofit): AskBoxApi {
         return retrofit.create(AskBoxApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePushNotificationManager(
+        @ApplicationContext context: Context,
+        authRepository: AuthRepository
+    ): PushNotificationManager {
+        return PushNotificationManager(context, authRepository)
     }
 }

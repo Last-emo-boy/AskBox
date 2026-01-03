@@ -8,12 +8,14 @@ import {
   fromBase64Url,
   toBase64Url,
 } from '@askbox/crypto';
-import { Copy, Eye, Inbox, Loader2, MessageSquare, Plus } from 'lucide-react';
+import { Copy, Eye, Inbox, Loader2, MessageSquare, Plus, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Header } from '@/components/Header';
+import { PushNotificationToggle } from '@/components/PushNotificationToggle';
+import ShareDialog from '@/components/ShareDialog';
 import { BoxListSkeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +44,7 @@ export default function BoxesPage() {
   const [needPassword, setNeedPassword] = useState(false);
   const [error, setError] = useState('');
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [shareBox, setShareBox] = useState<{ slug: string; url: string } | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -195,8 +198,15 @@ export default function BoxesPage() {
       <main className="bg-background min-h-screen">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12">
           <header className="mb-6 sm:mb-8">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">我的提问箱</h1>
-            <p className="text-muted-foreground mt-1 text-sm sm:text-base">创建和管理你的提问箱</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">我的提问箱</h1>
+                <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+                  创建和管理你的提问箱
+                </p>
+              </div>
+              <PushNotificationToggle />
+            </div>
           </header>
 
           {needPassword && account?.encrypted_seed && (
@@ -310,6 +320,19 @@ export default function BoxesPage() {
                             </div>
                           </div>
                           <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setShareBox({
+                                  slug: box.slug,
+                                  url: `${window.location.origin}/box/${box.slug}`,
+                                })
+                              }
+                            >
+                              <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">分享</span>
+                            </Button>
                             <Button asChild variant="outline" size="sm">
                               <Link href={`/box/${box.slug}`}>
                                 <Eye className="mr-1.5 h-3.5 w-3.5" />
@@ -333,6 +356,16 @@ export default function BoxesPage() {
           )}
         </div>
       </main>
+
+      {/* Share Dialog */}
+      {shareBox && (
+        <ShareDialog
+          isOpen={!!shareBox}
+          onClose={() => setShareBox(null)}
+          boxSlug={shareBox.slug}
+          boxUrl={shareBox.url}
+        />
+      )}
     </>
   );
 }

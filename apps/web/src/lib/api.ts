@@ -201,6 +201,19 @@ class ApiClient {
       published_at: string;
     }>('POST', `/v1/answers/${answerId}/publish`, { public_text: publicText });
   }
+
+  // Push Notifications
+  async subscribePush(subscription: PushSubscriptionJSON) {
+    return this.request<{ ok: boolean }>('POST', '/v1/push/subscribe/web', subscription);
+  }
+
+  async unsubscribePush(endpoint: string) {
+    return this.request<{ ok: boolean }>('POST', '/v1/push/unsubscribe', { endpoint });
+  }
+
+  async getVapidPublicKey() {
+    return this.request<{ vapidPublicKey: string }>('GET', '/v1/push/vapid-public-key');
+  }
 }
 
 export const api = new ApiClient();

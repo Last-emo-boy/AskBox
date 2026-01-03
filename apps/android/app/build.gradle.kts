@@ -5,6 +5,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    // Apply google-services only if google-services.json exists
+    id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
+// Apply Google Services plugin only if google-services.json exists
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -108,6 +115,13 @@ dependencies {
 
     // Image loading
     implementation(libs.coil.compose)
+    
+    // QR Code generation
+    implementation("com.google.zxing:core:3.5.2")
+    
+    // Firebase (optional - only if google-services.json exists)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     // Testing
     testImplementation(libs.junit)

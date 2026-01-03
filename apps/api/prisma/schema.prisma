@@ -15,6 +15,7 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at")
   
   boxes       Box[]
+  pushSubscriptions PushSubscription[]
   
   @@map("users")
 }
@@ -84,4 +85,27 @@ model AuthChallenge {
   
   @@index([expiresAt])
   @@map("auth_challenges")
+}
+
+// Push notification subscriptions
+enum PushPlatform {
+  web
+  android
+  ios
+}
+
+model PushSubscription {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  platform    PushPlatform
+  endpoint    String       // Web Push endpoint or FCM token
+  keys        Json?        // Web Push keys (p256dh, auth)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  lastUsedAt  DateTime?    @map("last_used_at")
+  
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@map("push_subscriptions")
 }

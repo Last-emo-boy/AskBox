@@ -22,18 +22,6 @@ class CryptoManager @Inject constructor() {
 
     private val lazySodium: LazySodiumAndroid = LazySodiumAndroid(SodiumAndroid())
     private val sodium: SodiumAndroid = SodiumAndroid()
-    
-    private fun log(message: String, data: Map<String, String>? = null) {
-        debugLogger.log("CRYPTO", message, data)
-    }
-    
-    private fun logBytes(message: String, vararg namedBytes: Pair<String, ByteArray>) {
-        debugLogger.logBytes("CRYPTO", message, *namedBytes)
-    }
-    
-    private fun logError(message: String, error: Throwable) {
-        debugLogger.logError("CRYPTO", message, error)
-    }
 
     // ========================================
     // Base64url encoding/decoding

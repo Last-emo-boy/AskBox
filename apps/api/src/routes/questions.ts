@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { config } from '../config.js';
 import { prisma } from '../lib/prisma.js';
+import { notifyNewQuestion } from '../services/pushService.js';
 import { questionRateLimit } from '../utils/rateLimit.js';
 
 // Schemas
@@ -82,6 +83,11 @@ export async function questionRoutes(app: FastifyInstance) {
             : null,
           askerTokenHash: Buffer.from(askerTokenHash),
         },
+      });
+
+      // Send push notification to box owner (fire and forget)
+      notifyNewQuestion(box_id).catch((err) => {
+        request.log.error({ err }, 'Failed to send push notification');
       });
 
       return reply.status(201).send({
