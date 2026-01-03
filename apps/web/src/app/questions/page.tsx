@@ -131,11 +131,31 @@ function QuestionsContent() {
         return;
       }
       setAccount(stored);
-      setNeedPassword(!!stored.encrypted_seed);
-      setIsLoading(false);
+
+      // If has encrypted seed, need password first
+      if (stored.encrypted_seed) {
+        setNeedPassword(true);
+        setIsLoading(false);
+      } else {
+        // Has plaintext seed, can login and load automatically
+        setNeedPassword(false);
+        // Will load in the second useEffect
+      }
     };
     init();
   }, [router]);
+
+  // Auto-login and load when account is ready and no password needed
+  useEffect(() => {
+    if (account && !needPassword && !account.encrypted_seed && !accountKeys) {
+      login().then((success) => {
+        if (success) {
+          // loadQuestions will be triggered by the next useEffect when accountKeys is set
+        }
+        setIsLoading(false);
+      });
+    }
+  }, [account, needPassword, accountKeys]);
 
   const login = async (): Promise<boolean> => {
     if (!account) {

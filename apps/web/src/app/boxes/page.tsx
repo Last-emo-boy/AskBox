@@ -51,11 +51,32 @@ export default function BoxesPage() {
         return;
       }
       setAccount(stored);
-      setNeedPassword(!!stored.encrypted_seed);
-      setIsLoading(false);
+
+      // If has encrypted seed, need password first
+      if (stored.encrypted_seed) {
+        setNeedPassword(true);
+        setIsLoading(false);
+      } else {
+        // Has plaintext seed, can login and load boxes automatically
+        setNeedPassword(false);
+        // Will load boxes in the second useEffect
+      }
     };
     init();
   }, [router]);
+
+  // Auto-load boxes when account is ready and no password needed
+  useEffect(() => {
+    if (account && !needPassword && !account.encrypted_seed) {
+      login().then((success) => {
+        if (success) {
+          loadBoxes().finally(() => setIsLoading(false));
+        } else {
+          setIsLoading(false);
+        }
+      });
+    }
+  }, [account, needPassword]);
 
   const login = async (): Promise<boolean> => {
     if (!account) {
