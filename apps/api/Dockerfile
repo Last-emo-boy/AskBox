@@ -35,22 +35,14 @@ RUN pnpm --filter @askbox/api build
 RUN pnpm --filter @askbox/api db:generate
 
 # Use pnpm deploy to create a standalone deployment with all dependencies resolved
+# Now includes prisma as a production dependency
 RUN pnpm --filter @askbox/api deploy --prod /app/deploy
 
 # Copy Prisma schema and generated client to deploy directory
 RUN cp -r /app/apps/api/prisma /app/deploy/
 
-# Debug: Find where .prisma is located
-RUN find /app -name ".prisma" -type d 2>/dev/null || echo "No .prisma directory found"
-RUN find /app -name "libquery_engine*" -type f 2>/dev/null | head -5 || echo "No query engine found"
-
-# Copy .prisma from wherever it is (pnpm stores it in .pnpm)
-RUN cp -r $(find /app -path "*/.prisma/client" -type d | head -1)/.. /app/deploy/node_modules/.prisma || echo "Trying alternative location"
-
-# Copy Prisma CLI and engines from builder (to avoid npx downloading wrong version)
-RUN mkdir -p /app/deploy/node_modules/prisma /app/deploy/node_modules/@prisma/engines
-RUN cp -r /app/node_modules/.pnpm/prisma@*/node_modules/prisma/* /app/deploy/node_modules/prisma/
-RUN cp -r /app/node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines/* /app/deploy/node_modules/@prisma/engines/
+# Copy .prisma generated client
+RUN cp -r $(find /app -path "*/.prisma/client" -type d | head -1)/.. /app/deploy/node_modules/.prisma
 
 # Production stage
 FROM node:20-alpine AS runner
@@ -62,10 +54,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy deployed application (pnpm deploy resolves all workspace dependencies)
+# Copy deployed application (pnpm deploy resolves all workspace dependencies including prisma)
 COPY --from=builder /app/deploy ./
 
 EXPOSE 3030
 
-# Run database migrations and start using the copied prisma CLI
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate && node dist/index.js"]
+# Run database migrations and start (prisma is now a prod dependency)
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
