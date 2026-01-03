@@ -64,12 +64,12 @@ COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
-# Generate Prisma client in production
-RUN cd apps/api && npx prisma generate
+# Generate Prisma client in production (use pnpm exec to use installed version, not npx which downloads latest)
+RUN cd apps/api && pnpm exec prisma generate
 
 WORKDIR /app/apps/api
 
 EXPOSE 3030
 
-# Run database migrations and start
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+# Run database migrations and start (use pnpm exec for installed prisma version)
+CMD ["sh", "-c", "pnpm exec prisma db push --skip-generate && node dist/index.js"]
