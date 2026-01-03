@@ -50,7 +50,7 @@ COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/api
 
-EXPOSE 3001
+EXPOSE 3030
 
 # Run database migrations and start
 CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]

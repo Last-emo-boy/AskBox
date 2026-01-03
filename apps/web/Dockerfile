@@ -24,7 +24,7 @@ RUN pnpm --filter @askbox/shared-types build
 RUN pnpm --filter @askbox/crypto build
 
 # Build argument for API URL (needed at build time for Next.js)
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ARG NEXT_PUBLIC_API_URL=https://askbox.w33d.xyz/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build web app
@@ -48,9 +48,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/sta
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3031
 
-ENV PORT=3000
+ENV PORT=3031
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

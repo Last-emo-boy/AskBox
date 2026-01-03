@@ -41,14 +41,14 @@ services:
     container_name: askbox-api
     restart: always
     ports:
-      - "${API_PORT:-3001}:3001"
+      - "${API_PORT:-3030}:3030"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-askbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-askbox}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://askbox.w33d.xyz}
+      PORT: 3030
       HOST: 0.0.0.0
     depends_on:
       postgres:
@@ -56,7 +56,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3030/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -68,17 +68,19 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://askbox.w33d.xyz/api}
     container_name: askbox-web
     restart: always
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3031}:3031"
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://askbox.w33d.xyz/api}
     depends_on:
       - api
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3031"]
       interval: 30s
       timeout: 10s
       retries: 3
