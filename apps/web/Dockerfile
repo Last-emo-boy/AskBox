@@ -12,11 +12,11 @@ RUN pnpm config set registry https://registry.npmmirror.com && \
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY packages/crypto/package.json ./packages/crypto/
-COPY packages/shared-types/package.json ./packages/shared-types/
-COPY apps/web/package.json ./apps/web/
+# Copy package files and tsconfig
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY packages/crypto/package.json packages/crypto/tsconfig.json ./packages/crypto/
+COPY packages/shared-types/package.json packages/shared-types/tsconfig.json ./packages/shared-types/
+COPY apps/web/package.json apps/web/tsconfig.json ./apps/web/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
