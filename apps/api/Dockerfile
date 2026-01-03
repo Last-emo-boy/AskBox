@@ -37,6 +37,9 @@ RUN pnpm --filter @askbox/api db:generate
 # Production stage
 FROM node:20-alpine AS runner
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl openssl-dev libc6-compat
+
 RUN corepack enable && corepack prepare pnpm@8 --activate
 
 WORKDIR /app
