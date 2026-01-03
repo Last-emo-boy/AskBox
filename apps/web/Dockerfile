@@ -48,11 +48,17 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built files (public is optional, may not exist)
-RUN mkdir -p ./public
-COPY --from=builder /app/apps/web/public* ./public/
+# Copy built files
+# In monorepo, standalone output has nested structure
+# Copy the entire standalone directory first
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
+
+# Copy static files to the correct location within the app structure
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# Copy public files (if they exist)
+RUN mkdir -p ./apps/web/public
+COPY --from=builder /app/apps/web/public* ./apps/web/public/
 
 USER nextjs
 
@@ -61,4 +67,5 @@ EXPOSE 3031
 ENV PORT=3031
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# In monorepo standalone, server.js is in apps/web/
+CMD ["node", "apps/web/server.js"]
