@@ -34,42 +34,27 @@ RUN pnpm --filter @askbox/api build
 # Generate Prisma client
 RUN pnpm --filter @askbox/api db:generate
 
+# Use pnpm deploy to create a standalone deployment with all dependencies resolved
+RUN pnpm --filter @askbox/api deploy --prod /app/deploy
+
+# Copy Prisma schema and generated client to deploy directory
+RUN cp -r /app/apps/api/prisma /app/deploy/
+RUN cp -r /app/apps/api/node_modules/.prisma /app/deploy/node_modules/ || true
+
 # Production stage
 FROM node:20-alpine AS runner
 
 # Install OpenSSL for Prisma, and wget for healthcheck
 RUN apk add --no-cache openssl openssl-dev libc6-compat wget
 
-# Use npm in production (simpler than pnpm for deployment)
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package files
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
-COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
-COPY --from=builder /app/apps/api/package.json ./apps/api/
+# Copy deployed application (pnpm deploy resolves all workspace dependencies)
+COPY --from=builder /app/deploy ./
 
-# Copy built files
-COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
-COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-
-# Install production dependencies using npm (flattened node_modules, no symlink issues)
-# Configure npm to use China mirror
-RUN npm config set registry https://registry.npmmirror.com
-
-# Install dependencies for crypto package (libsodium)
-WORKDIR /app/packages/crypto
-RUN npm install --omit=dev --ignore-scripts
-
-# Install dependencies for api package
-WORKDIR /app/apps/api
-RUN npm install --omit=dev --ignore-scripts
-
-# Generate Prisma client for this environment
+# Regenerate Prisma client for this environment (Alpine Linux)
 RUN npx prisma generate
 
 EXPOSE 3030
