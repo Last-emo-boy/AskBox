@@ -28,7 +28,7 @@ test.describe('Homepage', () => {
     await page.getByRole('link', { name: /导入账户/i }).click();
 
     await expect(page).toHaveURL('/account/import');
-    // Page title is in CardTitle, not h1
-    await expect(page.getByText('导入账户')).toBeVisible();
+    // Page title is in CardTitle (h3), use heading role
+    await expect(page.getByRole('heading', { name: '导入账户' })).toBeVisible();
   });
 });

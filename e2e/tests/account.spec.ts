@@ -51,7 +51,7 @@ test.describe('Account Import Flow', () => {
   test('should show import form', async ({ page }) => {
     await page.goto('/account/import');
 
-    await expect(page.getByText('导入账户')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '导入账户' })).toBeVisible();
     await expect(page.getByLabel('输入种子')).toBeVisible();
   });
 

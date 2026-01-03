@@ -30,8 +30,8 @@ test.describe('Box Creation Flow', () => {
     // Click create button
     await page.getByRole('button', { name: /创建/i }).click();
 
-    // Should see the new box in the list
-    await expect(page.getByText(boxSlug)).toBeVisible({ timeout: 10000 });
+    // Should see the new box in the list (use heading to avoid matching share link)
+    await expect(page.getByRole('heading', { name: boxSlug })).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -51,8 +51,8 @@ test.describe('Question Submission Flow', () => {
     await page.getByPlaceholder(/自定义链接/i).fill(boxSlug);
     await page.getByRole('button', { name: /创建/i }).click();
 
-    // Wait for box to appear in list
-    await expect(page.getByText(boxSlug)).toBeVisible({ timeout: 10000 });
+    // Wait for box to appear in list (use heading to avoid matching share link)
+    await expect(page.getByRole('heading', { name: boxSlug })).toBeVisible({ timeout: 10000 });
 
     // Open a new context (simulating anonymous user)
     const context = await page.context().browser()!.newContext();
