@@ -42,21 +42,30 @@ RUN apk add --no-cache openssl openssl-dev libc6-compat
 
 RUN corepack enable && corepack prepare pnpm@8 --activate
 
+# Configure pnpm with China mirror
+RUN pnpm config set registry https://registry.npmmirror.com
+
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built files and dependencies
+# Copy package files for installing production dependencies
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
-COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
 COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
-COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built files
+COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
+COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+
+# Generate Prisma client in production
+RUN cd apps/api && npx prisma generate
 
 WORKDIR /app/apps/api
 
