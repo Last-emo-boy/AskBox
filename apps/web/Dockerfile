@@ -40,6 +40,9 @@ RUN pnpm --filter @askbox/web build
 # Production stage
 FROM node:20-alpine AS runner
 
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
 WORKDIR /app
 
 ENV NODE_ENV=production

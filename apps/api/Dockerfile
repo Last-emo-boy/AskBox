@@ -37,13 +37,8 @@ RUN pnpm --filter @askbox/api db:generate
 # Production stage
 FROM node:20-alpine AS runner
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl openssl-dev libc6-compat
-
-RUN corepack enable && corepack prepare pnpm@8 --activate
-
-# Configure pnpm with China mirror
-RUN pnpm config set registry https://registry.npmmirror.com
+# Install OpenSSL for Prisma, and wget for healthcheck
+RUN apk add --no-cache openssl openssl-dev libc6-compat wget
 
 WORKDIR /app
 
@@ -61,10 +56,12 @@ COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 # Copy entire node_modules from builder (pnpm uses symlinks in .pnpm directory)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder /app/packages/crypto/node_modules ./packages/crypto/node_modules
 
 WORKDIR /app/apps/api
 
 EXPOSE 3030
 
 # Run database migrations and start
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+# Use node to run prisma directly to avoid npx downloading wrong version
+CMD ["sh", "-c", "node ../../node_modules/prisma/build/index.js db push --skip-generate && node dist/index.js"]
