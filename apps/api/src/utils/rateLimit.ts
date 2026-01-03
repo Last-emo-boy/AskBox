@@ -158,8 +158,8 @@ export function createRateLimiter(options: RateLimitOptions) {
 
 /** Rate limit question creation by IP + box */
 export const questionRateLimit = createRateLimiter({
-  max: 50,
-  windowSec: 3600, // 1 hour
+  max: 100,
+  windowSec: 3600, // 1 hour - 100 questions per box per IP
   prefix: 'question',
   keyGenerator: (request) => {
     const ip = getClientIp(request);
@@ -184,17 +184,17 @@ export const answerRetrievalRateLimit = createRateLimiter({
 
 /** Rate limit auth attempts by IP */
 export const authRateLimit = createRateLimiter({
-  max: 10,
-  windowSec: 60, // 1 minute
+  max: 60,
+  windowSec: 60, // 1 minute - allows ~1 request per second
   prefix: 'auth',
   keyGenerator: (request) => {
     return [getClientIp(request)];
   },
 });
 
-/** Strict rate limit for box creation */
+/** Rate limit for box creation */
 export const boxCreationRateLimit = createRateLimiter({
-  max: 5,
+  max: 20,
   windowSec: 3600, // 1 hour
   prefix: 'box-create',
   keyGenerator: (request) => {
@@ -207,7 +207,7 @@ export const boxCreationRateLimit = createRateLimiter({
 
 /** Rate limit answer creation by box owner */
 export const answerCreationRateLimit = createRateLimiter({
-  max: 100,
+  max: 200,
   windowSec: 3600, // 1 hour
   prefix: 'answer-create',
   keyGenerator: (request) => {
