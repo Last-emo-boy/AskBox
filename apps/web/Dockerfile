@@ -3,6 +3,13 @@ FROM node:20-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@8 --activate
 
+# Configure pnpm with China mirror and retry settings
+RUN pnpm config set registry https://registry.npmmirror.com && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm config set fetch-timeout 300000
+
 WORKDIR /app
 
 # Copy package files
