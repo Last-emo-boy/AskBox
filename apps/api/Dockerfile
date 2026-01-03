@@ -13,6 +13,9 @@ RUN pnpm config set registry https://registry.npmmirror.com && \
     pnpm config set fetch-retry-maxtimeout 120000 && \
     pnpm config set fetch-timeout 300000
 
+# Set Prisma binary mirror for faster downloads in China
+ENV PRISMA_BINARIES_MIRROR=https://registry.npmmirror.com/-/binary/prisma
+
 WORKDIR /app
 
 # Copy package files and tsconfig
