@@ -1,13 +1,9 @@
 package xyz.askbox.app.ui.screens
 
-import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -30,7 +26,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import xyz.askbox.app.R
 import xyz.askbox.app.data.repository.AskBoxRepository
-import xyz.askbox.app.push.PushNotificationManager
 import xyz.askbox.app.util.DebugLogger
 import javax.inject.Inject
 
@@ -48,17 +43,6 @@ fun AccountScreen(
 
     var showExportDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    
-    // Permission launcher for notification permission (Android 13+)
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.enablePushNotifications()
-        } else {
-            Toast.makeText(context, "需要通知权限才能接收推送", Toast.LENGTH_SHORT).show()
-        }
-    }
     
     // Hidden debug entry - tap title 7 times
     var tapCount by remember { mutableIntStateOf(0) }
@@ -223,58 +207,6 @@ fun AccountScreen(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-            }
-
-            // Push notifications
-            if (viewModel.isPushSupported()) {
-                Card {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            if (uiState.pushEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                            contentDescription = null,
-                            tint = if (uiState.pushEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "推送通知",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = if (uiState.pushEnabled) "已开启 - 收到新问题时会通知您" else "未开启",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        if (uiState.isPushLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Switch(
-                                checked = uiState.pushEnabled,
-                                onCheckedChange = { enabled ->
-                                    if (enabled) {
-                                        // Check if we need to request permission (Android 13+)
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        } else {
-                                            viewModel.enablePushNotifications()
-                                        }
-                                    } else {
-                                        viewModel.disablePushNotifications()
-                                    }
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
@@ -458,15 +390,12 @@ data class AccountUiState(
     val exportedSeed: String? = null,
     val exportError: String? = null,
     val isExporting: Boolean = false,
-    val isDeleted: Boolean = false,
-    val pushEnabled: Boolean = false,
-    val isPushLoading: Boolean = false
+    val isDeleted: Boolean = false
 )
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
-    private val repository: AskBoxRepository,
-    private val pushManager: PushNotificationManager
+    private val repository: AskBoxRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AccountUiState())
@@ -476,17 +405,8 @@ class AccountViewModel @Inject constructor(
         viewModelScope.launch {
             val account = repository.getStoredAccount()
             _uiState.value = _uiState.value.copy(hasPassword = account?.hasPassword == true)
-            
-            // Check if push is currently enabled (has FCM token registered)
-            // For now, we'll track this in shared preferences in a real implementation
-            // Here we just check if notifications are allowed
-            _uiState.value = _uiState.value.copy(
-                pushEnabled = pushManager.hasNotificationPermission() && pushManager.isPushSupported()
-            )
         }
     }
-    
-    fun isPushSupported(): Boolean = pushManager.isPushSupported()
 
     fun setExportPassword(password: String) {
         _uiState.value = _uiState.value.copy(exportPassword = password, exportError = null)
@@ -520,36 +440,6 @@ class AccountViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteAccount()
             _uiState.value = _uiState.value.copy(isDeleted = true)
-        }
-    }
-    
-    fun enablePushNotifications() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isPushLoading = true)
-            try {
-                val success = pushManager.subscribeToPush()
-                _uiState.value = _uiState.value.copy(
-                    isPushLoading = false,
-                    pushEnabled = success
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isPushLoading = false)
-            }
-        }
-    }
-    
-    fun disablePushNotifications() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isPushLoading = true)
-            try {
-                pushManager.unsubscribeFromPush()
-                _uiState.value = _uiState.value.copy(
-                    isPushLoading = false,
-                    pushEnabled = false
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isPushLoading = false)
-            }
         }
     }
 }

@@ -77,22 +77,6 @@ interface AskBoxApi {
         @Query("question_id") questionId: String,
         @Query("asker_token") askerToken: String
     ): GetAskerAnswerResponse
-
-    // ========================================
-    // Push Notifications
-    // ========================================
-
-    @POST("push/subscribe/fcm")
-    suspend fun subscribeFcm(
-        @Header("Authorization") token: String,
-        @Body request: FcmSubscribeRequest
-    ): SimpleResponse
-
-    @POST("push/unsubscribe")
-    suspend fun unsubscribePush(
-        @Header("Authorization") token: String,
-        @Body request: UnsubscribeRequest
-    ): SimpleResponse
 }
 
 // ========================================
@@ -253,17 +237,6 @@ data class ApiError(
 data class ErrorDetail(
     val code: String,
     val message: String
-)
-
-// Push notifications
-@Serializable
-data class FcmSubscribeRequest(
-    @SerialName("fcmToken") val fcmToken: String
-)
-
-@Serializable
-data class UnsubscribeRequest(
-    val endpoint: String
 )
 
 @Serializable
