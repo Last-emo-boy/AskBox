@@ -82,11 +82,13 @@ describe('Auth Routes', () => {
       const seed = generateSeed();
       const keys = deriveAccountKeys(seed);
       const pubSignKey = toBase64Url(keys.signKeyPair.publicKey);
+      const pubEncKey = toBase64Url(keys.encKeyPair.publicKey);
 
       const mockChallenge = {
         id: 'challenge-id-123',
         nonce: Buffer.alloc(32),
         pubSignKey: Buffer.from(keys.signKeyPair.publicKey),
+        pubEncKey: Buffer.from(keys.encKeyPair.publicKey),
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         usedAt: null,
@@ -97,7 +99,7 @@ describe('Auth Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/v1/auth/challenge',
-        payload: { pub_sign_key: pubSignKey },
+        payload: { pub_sign_key: pubSignKey, pub_enc_key: pubEncKey },
       });
 
       expect(response.statusCode).toBe(200);
@@ -132,6 +134,7 @@ describe('Auth Routes', () => {
         id: challengeId,
         nonce: Buffer.from(nonce),
         pubSignKey: Buffer.from(keys.signKeyPair.publicKey),
+        pubEncKey: Buffer.from(keys.encKeyPair.publicKey),
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         usedAt: null,
@@ -140,7 +143,7 @@ describe('Auth Routes', () => {
       const mockUser = {
         id: 'user-id-789',
         pubSignKey: Buffer.from(keys.signKeyPair.publicKey),
-        pubEncKey: Buffer.alloc(32),
+        pubEncKey: Buffer.from(keys.encKeyPair.publicKey),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -190,6 +193,7 @@ describe('Auth Routes', () => {
         id: challengeId,
         nonce: Buffer.alloc(32),
         pubSignKey: Buffer.alloc(32),
+        pubEncKey: Buffer.alloc(32),
         createdAt: new Date(Date.now() - 60000),
         expiresAt: new Date(Date.now() - 1000), // Already expired
         usedAt: null,

@@ -18,11 +18,7 @@ class ApiClient {
     this.accessToken = token;
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown
-  ): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -48,12 +44,15 @@ class ApiClient {
   }
 
   // Auth
-  async requestChallenge(pubSignKey: string) {
+  async requestChallenge(pubSignKey: string, pubEncKey?: string) {
     return this.request<{
       nonce: string;
       challenge_id: string;
       expires_at: string;
-    }>('POST', '/v1/auth/challenge', { pub_sign_key: pubSignKey });
+    }>('POST', '/v1/auth/challenge', {
+      pub_sign_key: pubSignKey,
+      pub_enc_key: pubEncKey,
+    });
   }
 
   async verifyChallenge(challengeId: string, signature: string) {
@@ -96,11 +95,7 @@ class ApiClient {
   }
 
   // Questions
-  async submitQuestion(
-    boxId: string,
-    ciphertextQuestion: string,
-    receiptPubEncKey?: string
-  ) {
+  async submitQuestion(boxId: string, ciphertextQuestion: string, receiptPubEncKey?: string) {
     return this.request<{
       question_id: string;
       asker_token: string;
@@ -111,14 +106,15 @@ class ApiClient {
     });
   }
 
-  async getMyQuestions(params?: {
-    status?: 'unopened' | 'opened' | 'answered';
-    box_id?: string;
-  }) {
+  async getMyQuestions(params?: { status?: 'unopened' | 'opened' | 'answered'; box_id?: string }) {
     const query = new URLSearchParams();
-    if (params?.status) {query.set('status', params.status);}
-    if (params?.box_id) {query.set('box_id', params.box_id);}
-    
+    if (params?.status) {
+      query.set('status', params.status);
+    }
+    if (params?.box_id) {
+      query.set('box_id', params.box_id);
+    }
+
     return this.request<{
       questions: Array<{
         question_id: string;
@@ -180,7 +176,10 @@ class ApiClient {
       nonce?: string;
       dek_for_asker?: string;
       created_at: string;
-    }>('GET', `/v1/asker/answers?question_id=${questionId}&asker_token=${encodeURIComponent(askerToken)}`);
+    }>(
+      'GET',
+      `/v1/asker/answers?question_id=${questionId}&asker_token=${encodeURIComponent(askerToken)}`
+    );
   }
 
   async getAnswerForOwner(questionId: string) {

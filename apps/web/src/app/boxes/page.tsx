@@ -79,7 +79,10 @@ export default function BoxesPage() {
       }
 
       const keys = deriveAccountKeys(seed);
-      const challenge = await api.requestChallenge(toBase64Url(keys.signKeyPair.publicKey));
+      const challenge = await api.requestChallenge(
+        toBase64Url(keys.signKeyPair.publicKey),
+        toBase64Url(keys.encKeyPair.publicKey)
+      );
       const signature = signChallenge(fromBase64Url(challenge.nonce), keys.signKeyPair.privateKey);
       const auth = await api.verifyChallenge(challenge.challenge_id, toBase64Url(signature));
       api.setAccessToken(auth.access_token);
