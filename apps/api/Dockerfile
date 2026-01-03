@@ -49,30 +49,22 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package files for installing production dependencies
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
-COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
-COPY --from=builder /app/apps/api/package.json ./apps/api/
-
-# Install production dependencies only (ignore scripts to skip husky)
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
-
 # Copy built files
 COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
+COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
 COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
+COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
-# Copy Prisma client and CLI from builder stage
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+# Copy entire node_modules from builder (pnpm uses symlinks in .pnpm directory)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/api
 
 EXPOSE 3030
 
 # Run database migrations and start
-CMD ["sh", "-c", "node ../../node_modules/prisma/build/index.js db push --skip-generate && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
