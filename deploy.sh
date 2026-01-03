@@ -37,7 +37,7 @@ start() {
 # Stop services
 stop() {
     echo -e "${YELLOW}Stopping AskBox services...${NC}"
-    docker compose -f $COMPOSE_FILE down
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down
     echo -e "${GREEN}Services stopped.${NC}"
 }
 
@@ -52,19 +52,19 @@ restart() {
 logs() {
     local service=${1:-""}
     if [ -z "$service" ]; then
-        docker compose -f $COMPOSE_FILE logs -f
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f
     else
-        docker compose -f $COMPOSE_FILE logs -f $service
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f $service
     fi
 }
 
 # Show status
 status() {
     echo -e "${GREEN}AskBox Service Status:${NC}"
-    docker compose -f $COMPOSE_FILE ps
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps
     echo ""
     echo -e "${GREEN}Health Status:${NC}"
-    docker compose -f $COMPOSE_FILE ps --format "table {{.Name}}\t{{.Status}}"
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format "table {{.Name}}\t{{.Status}}"
 }
 
 # Update and redeploy
@@ -86,7 +86,7 @@ backup() {
     mkdir -p $backup_dir
     
     echo -e "${YELLOW}Backing up database...${NC}"
-    docker compose -f $COMPOSE_FILE exec -T postgres pg_dump -U askbox askbox > $backup_file
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T postgres pg_dump -U askbox askbox > $backup_file
     
     if [ $? -eq 0 ]; then
         gzip $backup_file
