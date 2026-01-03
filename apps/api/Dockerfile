@@ -55,8 +55,8 @@ COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/
 COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Install production dependencies only (ignore scripts to skip husky)
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy built files
 COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
