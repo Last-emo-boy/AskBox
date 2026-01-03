@@ -171,7 +171,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret-for-ci
           CORS_ORIGIN: http://localhost:3000
-          PORT: 3001
           HOST: 0.0.0.0
           NODE_ENV: test
           # Web environment variables
