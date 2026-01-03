@@ -113,8 +113,54 @@ restore() {
     fi
     
     echo -e "${YELLOW}Restoring database from $backup_file...${NC}"
-    gunzip -c $backup_file | docker compose -f $COMPOSE_FILE exec -T postgres psql -U askbox askbox
+    gunzip -c $backup_file | docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T postgres psql -U askbox askbox
     echo -e "${GREEN}Restore complete!${NC}"
+}
+
+# Delete everything (containers, volumes, images) for a fresh start
+delete() {
+    echo -e "${RED}WARNING: This will delete ALL AskBox data including:${NC}"
+    echo "  - All containers"
+    echo "  - All volumes (database data, redis data)"
+    echo "  - All built images"
+    echo ""
+    read -p "Are you sure you want to continue? (type 'yes' to confirm): " confirm
+    
+    if [ "$confirm" != "yes" ]; then
+        echo -e "${YELLOW}Aborted.${NC}"
+        exit 0
+    fi
+    
+    echo -e "${RED}Stopping and removing containers...${NC}"
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down -v --rmi local 2>/dev/null || true
+    
+    echo -e "${RED}Removing images...${NC}"
+    docker images | grep -E "askbox" | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
+    
+    echo -e "${RED}Pruning unused volumes...${NC}"
+    docker volume prune -f 2>/dev/null || true
+    
+    echo -e "${GREEN}All AskBox data has been deleted.${NC}"
+    echo -e "${YELLOW}Run './deploy.sh start' to deploy fresh.${NC}"
+}
+
+# Reset database only (keep containers but clear all data)
+reset_db() {
+    echo -e "${RED}WARNING: This will delete ALL database data!${NC}"
+    read -p "Are you sure? (type 'yes' to confirm): " confirm
+    
+    if [ "$confirm" != "yes" ]; then
+        echo -e "${YELLOW}Aborted.${NC}"
+        exit 0
+    fi
+    
+    echo -e "${YELLOW}Resetting database...${NC}"
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T postgres psql -U askbox -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" askbox
+    
+    echo -e "${YELLOW}Running migrations...${NC}"
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T api npx prisma db push --skip-generate
+    
+    echo -e "${GREEN}Database reset complete!${NC}"
 }
 
 # Show help
@@ -132,6 +178,8 @@ help() {
     echo "  update      Pull latest code and redeploy"
     echo "  backup      Backup database"
     echo "  restore     Restore database from backup"
+    echo "  delete      Delete ALL containers, volumes, and images (fresh start)"
+    echo "  reset-db    Reset database only (clear all data, keep containers)"
     echo "  help        Show this help message"
 }
 
@@ -160,6 +208,12 @@ case "${1:-help}" in
         ;;
     restore)
         restore $2
+        ;;
+    delete)
+        delete
+        ;;
+    reset-db)
+        reset_db
         ;;
     help|*)
         help
